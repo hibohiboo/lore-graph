@@ -1,120 +1,124 @@
 # lore-graph
 
-> A narrative exploration game where the world reveals itself through rumor, contradiction, and knowledge.
+> 噂、矛盾、そして断片的な知識を通じて、世界が少しずつ姿を現すナラティブ探索ゲーム。
 
 ---
 
-## Overview
+## 概要
 
-**lore-graph** is an experimental narrative game set in a tavern. Players gather fragments of information by talking to NPCs — but no single conversation tells the full truth. Rumors are partial, sometimes contradictory, and always incomplete. As conversations accumulate, a knowledge graph emerges, and the world's lore slowly surfaces from the noise.
+**lore-graph** は、酒場を舞台にした実験的なナラティブゲームです。プレイヤーは NPC との会話を通じて情報の断片を収集しますが、一度の会話で真実がわかることはありません。噂は断片的で、ときに矛盾し、常に不完全です。会話を積み重ねるうちに知識グラフが形成され、世界のロア（設定・歴史）が少しずつ浮かび上がってきます。
 
-The core challenge: piecing together a coherent picture of a world that refuses to explain itself.
-
----
-
-## Core Concepts
-
-### Fragmented Knowledge
-No NPC has the full picture. Each conversation yields a shard of information — a name, a rumor, a half-remembered event. Players must collect and connect fragments over time.
-
-### Rumors vs. Facts
-NPCs speak from belief, not truth. What they say is generated from a structured world model, but filtered through the lens of their character and knowledge. The **source of truth is the graph** — not the dialogue.
-
-### Knowledge Graph
-All extracted information is stored as a graph of entities and relationships. The graph evolves as new information arrives, and contradictions are tracked explicitly rather than resolved silently.
-
-### NPC-Driven Exploration
-NPCs don't deliver exposition — they reflect the world as they understand it. Talking to the right people (or the same person twice) can unlock new nodes in the graph and surface hidden connections.
+核心にあるのは、自ら語ろうとしない世界を、断片から読み解くという挑戦です。
 
 ---
 
-## Architecture
+## 主要コンセプト
+
+### 断片的な知識
+
+全体像を把握している NPC は存在しません。各会話から得られるのは、名前・噂・うろ覚えの出来事といった情報の欠片です。プレイヤーはそれらを収集し、時間をかけてつなぎ合わせていきます。
+
+### 噂と事実
+
+NPC が語るのは「信じていること」であり、「真実」ではありません。発言は構造化された世界モデルをもとに生成されますが、そのキャラクターの知識や視点を通してフィルタリングされます。**ソースオブトゥルースはグラフであり、対話ではありません。**
+
+### 知識グラフ
+
+抽出されたすべての情報は、エンティティと関係からなるグラフとして蓄積されます。新たな情報が加わるたびにグラフは更新され、矛盾は暗黙に解消されるのではなく、明示的に追跡されます。
+
+### NPC による探索
+
+NPC はストーリーを説明するのではなく、自分が理解している世界を反映します。適切な相手に話しかけること、あるいは同じ相手と複数回会話することで、グラフに新たなノードが追加され、隠れた関係が浮かび上がります。
+
+---
+
+## アーキテクチャ
 
 ```
 ┌─────────────────────────────────────────┐
-│              Game Client                │  Player interface, dialogue UI
+│              Game Client                │  プレイヤーUI・対話インターフェース
 ├─────────────────────────────────────────┤
-│              NPC Mind                   │  Character behavior, belief state
+│              NPC Mind                   │  キャラクター挙動・信念状態の管理
 ├─────────────────────────────────────────┤
-│              Lore Engine                │  Extraction, contradiction handling,
-│                                         │  world model management
+│              Lore Engine                │  情報抽出・矛盾処理・
+│                                         │  世界モデルの管理
 ├─────────────────────────────────────────┤
-│   LLM Adapter (OpenAI / Ollama)         │  Language generation and parsing
+│   LLM Adapter (OpenAI / Ollama)         │  自然言語生成・構造化情報のパース
 ├─────────────────────────────────────────┤
-│              Graph DB (Neo4j)           │  Persistent knowledge graph
+│              Graph DB (Neo4j)           │  永続的な知識グラフの保存
 └─────────────────────────────────────────┘
 ```
 
-- **LLM Layer** — Handles dialogue generation and structured information extraction via OpenAI API or local Ollama models.
-- **Lore Engine** — The core of the system. Receives extracted entities/relations, manages the world model, detects contradictions, and exposes query interfaces.
-- **Graph DB** — Stores the canonical world state as a property graph. Nodes are entities (people, places, events); edges are relationships.
-- **Game Client** — The player-facing interface. Renders conversations, surfaces discovered knowledge, and manages game flow.
+- **LLM 層** — OpenAI API またはローカルの Ollama を使い、対話生成と構造化情報の抽出を担当します。
+- **Lore Engine** — システムの中核。抽出されたエンティティ・関係を受け取り、世界モデルを管理し、矛盾を検出して、クエリインターフェースを提供します。
+- **Graph DB** — 世界の正規状態をプロパティグラフとして保持します。ノードはエンティティ（人物・場所・出来事）、エッジは関係を表します。
+- **Game Client** — プレイヤー向けのインターフェース。会話の描画、発見した知識の提示、ゲーム進行の管理を行います。
 
 ---
 
-## Monorepo Structure
+## モノレポ構成
 
 ```
 lore-graph/
 ├── apps/
-│   ├── game-client/       # Frontend game interface
-│   └── backend/           # API server, orchestration layer
+│   ├── game-client/       # フロントエンドのゲームUI
+│   └── backend/           # API サーバー・オーケストレーション層
 │
 └── packages/
-    ├── llm-adapter/       # Unified interface for OpenAI and Ollama
-    ├── lore-engine/       # World model, extraction, contradiction logic
-    ├── graph-db/          # Graph DB client and schema definitions
-    └── npc-mind/          # NPC character state, memory, belief modeling
+    ├── llm-adapter/       # OpenAI・Ollama の統一インターフェース
+    ├── lore-engine/       # 世界モデル・情報抽出・矛盾処理ロジック
+    ├── graph-db/          # グラフDB クライアント・スキーマ定義
+    └── npc-mind/          # NPC ごとの信念状態・知識スコープ・対話個性
 ```
 
-| Package | Responsibility |
+| パッケージ | 役割 |
 |---|---|
-| `llm-adapter` | Abstracts LLM providers; handles prompt templates and structured output parsing |
-| `lore-engine` | Core world model logic; ingests facts, tracks contradictions, answers queries |
-| `graph-db` | Neo4j client wrapper, schema, and migration utilities |
-| `npc-mind` | Per-NPC belief state, knowledge scope, and dialogue personality |
-| `game-client` | Player UI, conversation rendering, knowledge map visualization |
-| `backend` | REST/WebSocket API, session management, event routing |
+| `llm-adapter` | LLM プロバイダーを抽象化。プロンプトテンプレートと構造化出力のパースを管理 |
+| `lore-engine` | 世界モデルのコアロジック。ファクトの取り込み・矛盾追跡・クエリ応答 |
+| `graph-db` | Neo4j クライアントのラッパー。スキーマ定義とマイグレーションユーティリティ |
+| `npc-mind` | NPC ごとの信念状態・知識範囲・対話パーソナリティのモデリング |
+| `game-client` | プレイヤーUI・会話レンダリング・知識マップの可視化 |
+| `backend` | REST/WebSocket API・セッション管理・イベントルーティング |
 
 ---
 
-## Getting Started
+## はじめかた
 
-> Setup instructions coming soon. The project is in early development.
+> セットアップ手順は順次整備予定です。現在は初期開発段階です。
 
 ```bash
-# Clone the repo
+# リポジトリをクローン
 git clone https://github.com/your-org/lore-graph.git
 cd lore-graph
 
-# Install dependencies
+# 依存関係をインストール
 bun install
 
-# Configure environment
+# 環境変数を設定
 cp .env.example .env
-# Set OPENAI_API_KEY or OLLAMA_BASE_URL
+# OPENAI_API_KEY または OLLAMA_BASE_URL を設定
 
-# Start development
+# 開発サーバーを起動
 bun run dev
 ```
 
-Prerequisites: Node.js 20+, Bun, Neo4j (local or cloud), and either an OpenAI API key or a running Ollama instance.
+**前提条件:** Node.js 20+、Bun、Neo4j（ローカルまたはクラウド）、OpenAI API キーまたは起動済みの Ollama インスタンス
 
 ---
 
-## Future Ideas
+## 今後のアイデア
 
-- **NPC Memory** — NPCs remember past conversations and update their beliefs accordingly.
-- **Contradiction Resolution** — Players can actively confront NPCs with conflicting information and observe how they respond.
-- **Belief Drift** — World model updates propagate back to NPCs, shifting what they believe over time.
-- **Lore Archaeology** — Surfacing buried or forgotten facts as the graph grows dense enough to infer them.
-- **Multi-session Persistence** — The knowledge graph persists across play sessions, rewarding long-term exploration.
+- **NPC の記憶** — 過去の会話を記憶し、それに応じて信念を更新する NPC。
+- **矛盾の解決** — プレイヤーが矛盾した情報を NPC に突きつけ、その反応を観察できる仕組み。
+- **信念の変化** — 世界モデルの更新が NPC に波及し、時間とともに信じていることが変わっていく。
+- **ロアの考古学** — グラフが十分に充実したとき、埋もれた事実や忘れられた出来事が推論によって浮かび上がる。
+- **セッションをまたいだ永続化** — 知識グラフがプレイセッションを越えて保持され、長期的な探索が報われる。
 
 ---
 
-## Philosophy
+## 設計思想
 
-The world exists independently of what NPCs say about it. Dialogue is generated *from* the world model, not the other way around. This separation means the game can be genuinely surprising — not because it's random, but because the truth was always there, waiting to be assembled.
+世界は NPC が何を語るかとは独立して存在しています。対話は世界モデルから生成されるのであり、その逆ではありません。この分離によって、ゲームは本質的に驚きをはらんだものになります。それはランダムだからではなく、真実は最初からそこにあり、ただ組み上げられるのを待っていたからです。
 
 ---
 
