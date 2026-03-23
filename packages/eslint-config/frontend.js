@@ -1,6 +1,7 @@
 import reactHooks from "eslint-plugin-react-hooks";
 import eslintReact from "@eslint-react/eslint-plugin";
 import { defineConfig } from "eslint/config";
+import css from "@eslint/css";
 import { baseConfig } from "./base.js";
 
 export default defineConfig([
@@ -8,6 +9,10 @@ export default defineConfig([
   {
     ignores: ["dist", "build", "node_modules"],
   },
+   { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"],
+    rules: {
+    "css/no-invalid-properties": ["warn", { allowUnknownVariables: true }],
+  } },
   {
     files: ["**/*.{ts,tsx}"],
     plugins: {
