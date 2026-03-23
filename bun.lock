@@ -42,7 +42,7 @@
         "@eslint-react/eslint-plugin": "v2.13.0",
         "@eslint/css": "^1.0.0",
         "@eslint/js": "^10.0.1",
-        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
         "eslint": "^10.1.0",
         "eslint-plugin-react-hooks": "^7.0.1",
         "eslint-plugin-react-hooks-extra": "^2.13.0",
