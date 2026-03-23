@@ -1,7 +1,7 @@
 import reactHooks from "eslint-plugin-react-hooks";
 import eslintReact from "@eslint-react/eslint-plugin";
 import { defineConfig } from "eslint/config";
-import { baseConfig } from "./base";
+import { baseConfig } from "./base.js";
 
 export default defineConfig([
   ...baseConfig,
@@ -11,8 +11,7 @@ export default defineConfig([
   {
     files: ["**/*.{ts,tsx}"],
     plugins: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      "react-hooks": reactHooks as any,
+      "react-hooks": reactHooks,
       "@eslint-react": eslintReact,
     },
     languageOptions: {

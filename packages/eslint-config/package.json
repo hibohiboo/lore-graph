@@ -2,7 +2,6 @@
   "name": "@repo/eslint-config",
   "version": "0.0.0",
   "devDependencies": {
-    "@repo/typescript-config": "*",
     "@eslint-react/eslint-plugin": "v2.13.0",
     "@eslint/css": "^1.0.0",
     "@eslint/js": "^10.0.1",
@@ -14,7 +13,7 @@
   },
   "exports": {
     "./base": "./base.js",
-    "./frontend": "./frontend.ts"
+    "./frontend": "./frontend.js"
   },
   "private": true,
   "type": "module"
