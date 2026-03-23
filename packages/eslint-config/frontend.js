@@ -12,6 +12,7 @@ export default defineConfig([
    { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"],
     rules: {
     "css/no-invalid-properties": ["warn", { allowUnknownVariables: true }],
+    "css/use-baseline": ["error", { allowSelectors: ["nesting"] }],
   } },
   {
     files: ["**/*.{ts,tsx}"],
