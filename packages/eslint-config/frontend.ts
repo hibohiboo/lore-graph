@@ -1,15 +1,10 @@
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import eslintReact from "@eslint-react/eslint-plugin";
 import { defineConfig } from "eslint/config";
+import { baseConfig } from "./base";
 
 export default defineConfig([
-  {
-    ignores: ["dist", "build", "node_modules"],
-  },
-  js.configs.recommended,
-  tseslint.configs.recommended,
+  ...baseConfig,
   {
     files: ["**/*.{ts,tsx}"],
     plugins: {
