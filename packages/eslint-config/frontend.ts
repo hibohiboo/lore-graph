@@ -6,6 +6,9 @@ import { baseConfig } from "./base";
 export default defineConfig([
   ...baseConfig,
   {
+    ignores: ["dist", "build", "node_modules"],
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     plugins: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
