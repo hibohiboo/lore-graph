@@ -23,9 +23,6 @@ export default defineConfig([
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // @eslint-react のルールを適用
-      "@eslint-react/hooks-extra/no-unnecessary-use-state": "warn",
-      "@eslint-react/naming-convention/filename": ["error", "kebab-case"],
       // AIによる自動リファクタリングを前提とした厳格なルール設定
       "@eslint-react/prefer-read-only-props": "error",
     },

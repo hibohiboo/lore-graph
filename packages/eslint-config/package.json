@@ -1,19 +1,21 @@
 {
   "name": "@repo/eslint-config",
   "version": "0.0.0",
-  "type": "module",
-  "private": true,
-  "exports": {
-    "./base": "./base.js",
-    "./frontend": "./frontend.js"
-  },
   "devDependencies": {
+    "@repo/typescript-config": "*",
     "@eslint-react/eslint-plugin": "v2.13.0",
     "@eslint/css": "^1.0.0",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-hooks-extra": "^2.13.0",
     "globals": "^17.4.0",
     "typescript-eslint": "^8.57.1"
-  }
+  },
+  "exports": {
+    "./base": "./base.js",
+    "./frontend": "./frontend.ts"
+  },
+  "private": true,
+  "type": "module"
 }
