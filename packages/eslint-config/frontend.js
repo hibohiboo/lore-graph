@@ -28,7 +28,7 @@ export default defineConfig([
     rules: {
       ...reactHooks.configs.recommended.rules,
       // AIによる自動リファクタリングを前提とした厳格なルール設定
-      // "@eslint-react/prefer-read-only-props": "error",
+      "sonarjs/prefer-read-only-props": "error",
     },
   },
 ]);
