@@ -1,12 +1,17 @@
 {
   "name": "backend",
+  "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "hono": "^4.12.9"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "eslint": "^10.1.0",
     "@types/bun": "latest"
   }
 }

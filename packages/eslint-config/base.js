@@ -12,3 +12,4 @@ export const baseConfig = defineConfig([
   tseslint.configs.recommended,
   eslintConfigPrettier,
 ]);
+export default baseConfig
