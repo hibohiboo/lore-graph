@@ -1,6 +1,9 @@
 {
   "name": "@repo/eslint-config",
   "version": "0.0.0",
+  "scripts": {
+    "ncu": "ncu -u"
+  },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "v3.0.0",
     "@eslint/css": "^1.0.0",
