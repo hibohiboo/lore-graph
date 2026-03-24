@@ -17,15 +17,15 @@
     "@babel/core": "^7.29.0",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@rolldown/plugin-babel": "^0.2.1",
+    "@rolldown/plugin-babel": "^0.2.2",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^24.12.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^10.1.0",
-    "typescript": "~5.9.3",
-    "vite": "^8.0.1"
+    "typescript": "~6.0.2",
+    "vite": "^8.0.2"
   }
 }
