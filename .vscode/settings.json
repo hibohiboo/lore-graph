@@ -37,8 +37,7 @@
     "editor.formatOnSave": false
   },
   // デフォルトの設定はオフにしておく
-  "typescript.format.enable": false,
-  "javascript.format.enable": false,
+  "js/ts.format.enabled": false,
   // tailwindcssの設定
   "files.associations": {
     "*.css": "tailwindcss"
@@ -59,7 +58,7 @@
     "**/.cache/**": true,
     "**/.turbo/**": true
   },
-  // サイドバーに表示しないフォルダのせて血
+  // サイドバーに表示しないフォルダの設定
   "files.exclude": {
     "**/.git": true,
     "**/.DS_Store": true,
@@ -78,13 +77,12 @@
     "**/test-results/**": true
   },
   // tsの軽量化
-  "typescript.tsserver.log": "off", // tsserverのログ出力を停止
-  "typescript.disableAutomaticTypeAcquisition": true, // 自動型取得を無効化 (JS用に@typesから型をDLする機能)
-  "typescript.tsserver.experimental.enableProjectDiagnostics": false, // 大規模プロジェクトでの診断負荷を軽減
+  "js/ts.tsserver.log": "off", // tsserverのログ出力を停止
+  "js/ts.tsserver.automaticTypeAcquisition.enabled": false, // 自動型取得を無効化 (JS用に@typesから型をDLする機能)
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false, // 大規模プロジェクトでの診断負荷を軽減
   // git統合の最適化
   "git.enabled": true,
   "git.autorefresh": true,
   "git.autofetch": false,
   "git.decorations.enabled": true
-  // ファイルサイズ制限
 }
