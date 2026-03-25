@@ -7,17 +7,18 @@ import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import unusedImports from 'eslint-plugin-unused-imports';
 
 export const baseConfig = defineConfig([
-  {
-    ...sonarjs.configs.recommended,
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-  },
+  tseslint.configs.recommended,
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     plugins: { js, 'unused-imports': unusedImports },
     extends: ['js/recommended'],
     languageOptions: { globals: globals.browser },
   },
-  tseslint.configs.recommended,
+  {
+    ...sonarjs.configs.recommended,
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+  },
+
   eslintConfigPrettier,
 ]);
 export default baseConfig;
