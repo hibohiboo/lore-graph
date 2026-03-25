@@ -12,7 +12,10 @@ export const baseConfig = defineConfig([
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     plugins: { js, 'unused-imports': unusedImports },
     extends: ['js/recommended'],
-    languageOptions: { globals: globals.browser },
+    languageOptions: { globals: globals.node },
+    rules: {
+      'no-unused-vars': ['off'], // 型定義のvarまで認識してしまうため
+    },
   },
   {
     ...sonarjs.configs.recommended,

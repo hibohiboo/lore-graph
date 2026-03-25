@@ -1,3 +1,4 @@
+import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import eslintReact from '@eslint-react/eslint-plugin';
 import { defineConfig } from 'eslint/config';
@@ -8,6 +9,10 @@ export default defineConfig([
   ...baseConfig,
   {
     ignores: ['dist', 'build', 'node_modules'],
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    languageOptions: { globals: globals.browser },
   },
   {
     files: ['**/*.css'],
