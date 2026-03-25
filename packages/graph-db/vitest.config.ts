@@ -13,12 +13,7 @@ export default defineConfig({
     include: ['**/*.test.{ts,mts}'],
     exclude: ['**/node_modules/**', '**/dist/**'],
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        minForks: 1,
-        maxForks: 4,
-      },
-    },
+    maxWorkers: 4,
     testTimeout: 30000,
     maxConcurrency: 4,
   },
