@@ -7,6 +7,8 @@
     "ncu": "ncu -u"
   },
   "dependencies": {
+    "@repo/graph-db": "*",
+    "@repo/schema": "*",
     "hono": "^4.12.9"
   },
   "devDependencies": {
