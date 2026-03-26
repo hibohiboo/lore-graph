@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const NodeSchema = z.object({
+export const LoreNodeSchema = z.object({
   id: z.string().uuid(),
   label: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).default({}),
@@ -8,4 +8,4 @@ export const NodeSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
-export type Node = z.infer<typeof NodeSchema>;
+export type LoreNode = z.infer<typeof LoreNodeSchema>;
