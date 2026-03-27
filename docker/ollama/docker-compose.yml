@@ -1,9 +1,18 @@
 services:
   ollama:
-    image: ollama/ollama:latest
+    build:
+      context: .
+      args:
+        OLLAMA_MODEL: llama3.2
     user: root
     ports:
       - 11434:11434
     environment:
       - OLLAMA_HOST=0.0.0.0
       - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_MODEL=llama3.2
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  ollama_data:

@@ -19,7 +19,9 @@
         "@repo/graph-db": "*",
         "@repo/schema": "*",
         "hono": "^4.12.9",
+        "neo4j-driver": "^6.0.1",
         "openai": "^4.98.0",
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@repo/eslint-config": "*",
