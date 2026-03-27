@@ -1,0 +1,9 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    user: root
+    ports:
+      - 11434:11434
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - NVIDIA_VISIBLE_DEVICES=all

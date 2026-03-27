@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getDriver, getAllNodes } from '@repo/graph-db';
+import { createConversationRoute } from './routes/conversation.ts';
 
 let driver: ReturnType<typeof getDriver> | null = null;
 const db = () => (driver ??= getDriver());
@@ -17,5 +18,7 @@ app.get('/api/nodes', async (c) => {
   const nodes = await getAllNodes(db());
   return c.json(nodes);
 });
+
+app.route('/api/conversation', createConversationRoute(db));
 
 export default app;

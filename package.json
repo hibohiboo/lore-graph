@@ -17,6 +17,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "ncu": "turbo ncu --force && ncu -u",
     "graphdb": "bash ./docker/neo4j/bin/up.sh",
+    "ollama": "bash ./docker/ollama/bin/up.sh",
     "check-types": "turbo run check-types"
   },
   "packageManager": "bun@1.3.11",

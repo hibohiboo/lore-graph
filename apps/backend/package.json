@@ -9,7 +9,8 @@
   "dependencies": {
     "@repo/graph-db": "*",
     "@repo/schema": "*",
-    "hono": "^4.12.9"
+    "hono": "^4.12.9",
+    "openai": "^4.98.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
