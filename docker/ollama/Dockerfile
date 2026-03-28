@@ -1,6 +1,6 @@
 FROM ollama/ollama:latest
 
-ARG OLLAMA_MODEL=llama3.2
+ARG OLLAMA_MODEL=qwen2.5:7b
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

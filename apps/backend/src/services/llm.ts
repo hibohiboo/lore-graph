@@ -6,7 +6,7 @@ const client = new OpenAI({
   baseURL: process.env.OPENAI_API_BASE_URL,
   apiKey: process.env.OPENAI_API_KEY ?? 'ollama',
 });
-const model = process.env.OPENAI_CHAT_MODEL ?? 'llama3.2';
+const model = process.env.OPENAI_CHAT_MODEL ?? 'qwen2.5:7b';
 
 export const generateNpcReply = async (
   npcName: string,
