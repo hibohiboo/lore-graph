@@ -3,14 +3,14 @@ services:
     build:
       context: .
       args:
-        OLLAMA_MODEL: qwen2.5:7b
+        OLLAMA_MODEL: gpt-oss:20b
     user: root
     ports:
       - 11434:11434
     environment:
       - OLLAMA_HOST=0.0.0.0
       - NVIDIA_VISIBLE_DEVICES=all
-      - OLLAMA_MODEL=qwen2.5:7b
+      - OLLAMA_MODEL=gpt-oss:20b
     volumes:
       - ollama_data:/root/.ollama
 
