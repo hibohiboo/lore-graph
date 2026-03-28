@@ -91,17 +91,86 @@ ${existingText}
 
   const response = await client.chat.completions.create({
     model,
-    response_format: { type: 'json_object' },
+    response_format: FACTS_JSON_SCHEMA,
     messages,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
   logToFile('generateFactsFromQuestion - RESPONSE', raw);
-  const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
-  return parsed.success ? parsed.data.facts : [];
+  return parseFacts(raw);
 };
 
 const ExtractedFactsSchema = z.object({ facts: z.array(ExtractedFactSchema) });
+
+const VALID_PREDICATES = ['is', 'located_in', 'related_to', 'part_of', 'caused_by', 'seeks'] as const;
+type ValidPredicate = (typeof VALID_PREDICATES)[number];
+
+const PREDICATE_MAP: Record<string, ValidPredicate> = {
+  is_part_of: 'part_of',
+  contains: 'part_of',
+  belongs_to: 'part_of',
+  is_name_of: 'is',
+  named: 'is',
+  has_name: 'is',
+  is_located_in: 'located_in',
+  lives_in: 'located_in',
+  works_at: 'located_in',
+  is_related_to: 'related_to',
+  is_familiar_with: 'related_to',
+  knows: 'related_to',
+  is_caused_by: 'caused_by',
+  results_from: 'caused_by',
+  wants: 'seeks',
+  desires: 'seeks',
+};
+
+const normalizePredicate = (predicate: string): ValidPredicate => {
+  if ((VALID_PREDICATES as readonly string[]).includes(predicate)) {
+    return predicate as ValidPredicate;
+  }
+  const mapped = PREDICATE_MAP[predicate];
+  if (mapped) return mapped;
+  logToFile('parseFacts - FALLBACK', `unknown predicate "${predicate}" → related_to`);
+  return 'related_to';
+};
+
+const FACTS_JSON_SCHEMA = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'facts',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        facts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              subjectName: { type: 'string' },
+              predicate: { type: 'string', enum: VALID_PREDICATES },
+              objectName: { type: 'string' },
+              certainty: { type: 'number' },
+            },
+            required: ['subjectName', 'predicate', 'objectName', 'certainty'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['facts'],
+      additionalProperties: false,
+    },
+  },
+} as const;
+
+const parseFacts = (raw: string): ExtractedFact[] => {
+  const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
+  if (!parsed.success) {
+    logToFile('parseFacts - ERROR', parsed.error.message);
+    return [];
+  }
+  return parsed.data.facts.map((f) => ({ ...f, predicate: normalizePredicate(f.predicate) }));
+};
 
 export const extractFacts = async (
   npcName: string,
@@ -135,12 +204,11 @@ predicateは必ず以下のいずれかを使用してください：
 
   const response = await client.chat.completions.create({
     model,
-    response_format: { type: 'json_object' },
+    response_format: FACTS_JSON_SCHEMA,
     messages: extractMessages,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
   logToFile('extractFacts - RESPONSE', raw);
-  const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
-  return parsed.success ? parsed.data.facts : [];
+  return parseFacts(raw);
 };
