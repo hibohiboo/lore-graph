@@ -11,6 +11,7 @@
     "typescript": "^6.0.2"
   },
   "scripts": {
+    "init": "git config --local core.hooksPath .githooks && echo Changed hooks directory when npm install",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

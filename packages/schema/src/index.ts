@@ -1,2 +1,1 @@
-export * from "./node.js";
 export * from "./fact.js";
