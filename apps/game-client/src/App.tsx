@@ -47,7 +47,7 @@ function App() {
         </ul>
       )}
       <hr />
-      <ConversationPanel npcName="村の長老" />
+      <ConversationPanel npcName="酒場の娘" />
     </main>
   );
 }
