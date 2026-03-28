@@ -62,20 +62,28 @@ export const generateFactsFromQuestion = async (
       content: `あなたはナラティブゲームの世界設定を管理するロアエンジンです。
 NPC「${npcName}」がプレイヤーの質問に答えるために必要な事実を生成してください。
 
+【重要】プレイヤーが「あなた」と言った場合、それはNPC「${npcName}」自身を指します。
+NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
+自己紹介・名前・職業に関する質問には必ず事実を生成してください。
+
 NPCがすでに知っている情報：
 ${existingText}
 
 ルール：
 - すでに知っている情報と重複する事実は生成しない
-- NPC「${npcName}」の立場から知りえる情報のみ生成する
+- NPC「${npcName}」の立場から知りえる情報のみ生成する（自分自身のことは必ず知っている）
 - 答えられない・知りえない質問には {"facts": []} を返す
+- subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
 - predicateは必ず以下のいずれかを使用する：
-  - is（状態・性質）
+  - is（状態・性質・名前）
   - located_in（空間的な所在）
   - related_to（関係・つながり）
   - part_of（構成要素・所属）
   - caused_by（因果）
   - seeks（意図・欲求）
+
+例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"[名前]","certainty":1.0}]}
+例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[場所名]","certainty":1.0}]}
 
 形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
     },
