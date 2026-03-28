@@ -3,14 +3,14 @@ services:
     build:
       context: .
       args:
-        OLLAMA_MODEL: gpt-oss:20b
+        OLLAMA_MODEL: llama3.2
     user: root
     ports:
       - 11434:11434
     environment:
       - OLLAMA_HOST=0.0.0.0
       - NVIDIA_VISIBLE_DEVICES=all
-      - OLLAMA_MODEL=gpt-oss:20b
+      - OLLAMA_MODEL=hf.co/dahara1/Qwen3.5-4B-UD-japanese-imatrix:Q4_K_M
     volumes:
       - ollama_data:/root/.ollama
     deploy:
