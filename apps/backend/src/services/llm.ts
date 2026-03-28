@@ -46,15 +46,18 @@ export const generateNpcReply = async (
   return reply;
 };
 
+const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
+
 export const generateFactsFromQuestion = async (
   npcName: string,
   playerMessage: string,
   existingFacts: string[],
 ): Promise<ExtractedFact[]> => {
+  const confirmedFacts = existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const existingText =
-    existingFacts.length === 0
+    confirmedFacts.length === 0
       ? '（まだ何も知らない）'
-      : existingFacts.map((f) => `- ${f}`).join('\n');
+      : confirmedFacts.map((f) => `- ${f}`).join('\n');
 
   const messages = [
     {
@@ -74,6 +77,7 @@ ${existingText}
 - NPC「${npcName}」の立場から知りえる情報のみ生成する（自分自身のことは必ず知っている）
 - 答えられない・知りえない質問には {"facts": []} を返す
 - subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
+- objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
 - predicateは必ず以下のいずれかを使用する：
   - is（状態・性質・名前）
   - located_in（空間的な所在）
@@ -84,6 +88,7 @@ ${existingText}
 
 例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"[名前]","certainty":1.0}]}
 例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[場所名]","certainty":1.0}]}
+例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"この酒場","predicate":"is","objectName":"[酒場名]","certainty":1.0}]}
 
 形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
     },
