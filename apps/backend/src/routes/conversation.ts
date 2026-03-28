@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { type Driver } from 'neo4j-driver';
 import { getNpcFacts } from '@repo/graph-db';
-import { generateNpcReply, extractFacts } from '../services/llm.ts';
-import { mergeFactsToGraph } from '../services/graph-writer.ts';
+import { generateNpcReply, extractFacts } from '../services/llm.js';
+import { mergeFactsToGraph } from '../services/graph-writer.js';
 
 const ConversationRequestSchema = z.object({
   npcName: z.string(),

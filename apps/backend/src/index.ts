@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getDriver, getAllNodes } from '@repo/graph-db';
-import { createConversationRoute } from './routes/conversation.ts';
+import { createConversationRoute } from './routes/conversation.js';
 
 let driver: ReturnType<typeof getDriver> | null = null;
 const db = () => (driver ??= getDriver());
