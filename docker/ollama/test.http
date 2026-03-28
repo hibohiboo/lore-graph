@@ -1,5 +1,44 @@
 # RESTで確認
-post http://localhost:11434/api/generate
+post http://localhost:1234/v1/completions
+Content-Type: application/json
+
+{
+  "model": "gpt-oss:20b",
+  "prompt": "こんにちは",
+  "stream": false
+}
+
+### 
+post http://localhost:1234/v1/completions
+Content-Type: application/json
+
+{
+  "model": "hf.co/dahara1/Qwen3.5-4B-UD-japanese-imatrix:Q4_K_M",
+  "prompt": "NPCの発言から、NPCが述べている事実のみをJSONで返してください。 お店の名前は吟遊亭です",
+  "format":{
+        "type": "object",
+        "properties": {
+          "facts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectName": { "type": "string" },
+                "predicate": { "type": "string", "enum": "VALID_PREDICATES" },
+                "objectName": { "type": "string" },
+                "certainty": { "type": "number" }
+              },
+              "required": ["subjectName", "predicate", "objectName", "certainty"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["facts"]
+  },
+  "stream": false
+}
+### 
+post http://localhost:1234/api/generate
 
 {
   "model": "hf.co/dahara1/Qwen3.5-4B-UD-japanese-imatrix:Q4_K_M",
