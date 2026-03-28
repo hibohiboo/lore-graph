@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import { ConversationPanel } from './components/ConversationPanel';
 
 type LoreNode = {
   id: string;
@@ -45,6 +46,8 @@ function App() {
           ))}
         </ul>
       )}
+      <hr />
+      <ConversationPanel npcName="酒場の娘" />
     </main>
   );
 }
