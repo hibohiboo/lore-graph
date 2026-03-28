@@ -27,7 +27,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。`,
+      content: `あなたは「${npcName}」というNPCです。次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。必ず提供された情報のみを使って答え、知らないことは「わかりません」などと自然に答えてください。`,
     },
     { role: 'user' as const, content: playerMessage },
   ];
@@ -44,6 +44,61 @@ export const generateNpcReply = async (
   const reply = response.choices[0]?.message.content ?? '';
   logToFile('generateNpcReply - RESPONSE', reply);
   return reply;
+};
+
+export const generateFactsFromQuestion = async (
+  npcName: string,
+  playerMessage: string,
+  existingFacts: string[],
+): Promise<ExtractedFact[]> => {
+  const existingText =
+    existingFacts.length === 0
+      ? '（まだ何も知らない）'
+      : existingFacts.map((f) => `- ${f}`).join('\n');
+
+  const messages = [
+    {
+      role: 'system' as const,
+      content: `あなたはナラティブゲームの世界設定を管理するロアエンジンです。
+NPC「${npcName}」がプレイヤーの質問に答えるために必要な事実を生成してください。
+
+NPCがすでに知っている情報：
+${existingText}
+
+ルール：
+- すでに知っている情報と重複する事実は生成しない
+- NPC「${npcName}」の立場から知りえる情報のみ生成する
+- 答えられない・知りえない質問には {"facts": []} を返す
+- predicateは必ず以下のいずれかを使用する：
+  - is（状態・性質）
+  - located_in（空間的な所在）
+  - related_to（関係・つながり）
+  - part_of（構成要素・所属）
+  - caused_by（因果）
+  - seeks（意図・欲求）
+
+形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
+    },
+    {
+      role: 'user' as const,
+      content: `プレイヤーの質問: ${playerMessage}`,
+    },
+  ];
+  logToFile(
+    'generateFactsFromQuestion - REQUEST',
+    messages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
+  );
+
+  const response = await client.chat.completions.create({
+    model,
+    response_format: { type: 'json_object' },
+    messages,
+  });
+
+  const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
+  logToFile('generateFactsFromQuestion - RESPONSE', raw);
+  const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
+  return parsed.success ? parsed.data.facts : [];
 };
 
 const ExtractedFactsSchema = z.object({ facts: z.array(ExtractedFactSchema) });

@@ -5,7 +5,7 @@ type Props = {
 };
 
 export const ConversationPanel = ({ npcName }: Props) => {
-  const { playerMessage, setPlayerMessage, npcReply, extractedFacts, loading, error, sendMessage } =
+  const { playerMessage, setPlayerMessage, npcReply, newFacts, loading, error, sendMessage } =
     useConversation(npcName);
 
   return (
@@ -28,11 +28,11 @@ export const ConversationPanel = ({ npcName }: Props) => {
           <blockquote>{npcReply}</blockquote>
         </div>
       )}
-      {extractedFacts.length > 0 ? (
+      {newFacts.length > 0 ? (
         <details>
-          <summary>抽出されたFact ({extractedFacts.length}件)</summary>
+          <summary>新たに判明したFact ({newFacts.length}件)</summary>
           <ul>
-            {extractedFacts.map((f, i) => (
+            {newFacts.map((f, i) => (
               <li key={i}>
                 {f.subjectName} — {f.predicate} — {f.objectName}
                 <small> (確信度: {f.certainty})</small>
