@@ -79,8 +79,9 @@ ${existingText}
 - すでに知っている情報と重複する事実は生成しない
 - NPC「${npcName}」の立場から知りえる情報のみ生成する（自分自身のことは必ず知っている）
 - certaintyは確信度（0.0〜1.0）。確実な情報は1.0、推測・噂・うろ覚えは0.3〜0.7で生成してよい
-- NPC の職業・役割に関連する質問は、推測でも低いcertaintyで事実を生成する
-- NPCの立場から全く関係のない・知りえない質問のみ {"facts": []} を返す
+- NPC自身に関する質問（名前・住居・出身・家族・職業・日常など）は推測でも低いcertaintyで必ず事実を生成する
+- NPCの職業・役割に関連する質問も推測でよいので必ず事実を生成する
+- {"facts": []} を返すのは、NPCが全く関与しえない第三者・遠方・専門外の話題のみ
 - subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
 - objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
 - predicateは必ず以下のいずれかを使用する：
@@ -94,6 +95,7 @@ ${existingText}
 例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"[名前]","certainty":1.0}]}
 例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[場所名]","certainty":1.0}]}
 例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"この酒場","predicate":"is","objectName":"[酒場名]","certainty":1.0}]}
+例）プレイヤー「あなたの住んでいる町は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[町名]","certainty":0.9}]}
 
 形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
     },
