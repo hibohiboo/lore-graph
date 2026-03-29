@@ -1,6 +1,29 @@
 import { type Driver } from 'neo4j-driver';
 import { z } from 'zod';
 
+export const deleteNpcFact = async (
+  driver: Driver,
+  npcName: string,
+  subjectName: string,
+  predicate: string,
+  objectName: string,
+): Promise<void> => {
+  const session = driver.session();
+  try {
+    await session.executeWrite((tx) =>
+      tx.run(
+        `MATCH (npc:NPC {name: $npcName})-[b:BELIEVES]->(f:Fact {predicate: $predicate})
+         <-[:SUBJECT_OF]-(s:Entity {name: $subjectName})
+         MATCH (f)-[:OBJECT_OF]->(o:Entity {name: $objectName})
+         DELETE b`,
+        { npcName, subjectName, predicate, objectName },
+      ),
+    );
+  } finally {
+    await session.close();
+  }
+};
+
 const NpcFactRecordSchema = z.object({
   subject: z.string(),
   predicate: z.string(),

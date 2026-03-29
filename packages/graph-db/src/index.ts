@@ -1,2 +1,2 @@
 export { getDriver } from './driver';
-export { getNpcFacts } from './npc-facts';
+export { getNpcFacts, deleteNpcFact } from './npc-facts';
