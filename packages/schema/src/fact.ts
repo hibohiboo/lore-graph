@@ -28,6 +28,14 @@ export const ConversationMessageSchema = z.object({
 
 export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
 
+export const PersonaHintsSchema = z.object({
+  personalities: z.array(z.string()),
+  roles: z.array(z.string()),
+  knowledgeScopes: z.array(z.string()),
+});
+
+export type PersonaHints = z.infer<typeof PersonaHintsSchema>;
+
 export const NpcPersonaSchema = z.object({
   name: z.string(),
   roles: z.array(z.string()),

@@ -62,7 +62,11 @@ export const createConversationRoute = (db: () => Driver) => {
       });
     }
 
-    return c.json({ npcReply, newFacts: [...newFacts, ...replyFacts] });
+    return c.json({
+      npcReply,
+      newFacts: [...newFacts, ...replyFacts],
+      newPersonaHints: hasNewHints ? personaHints : { personalities: [], roles: [], knowledgeScopes: [] },
+    });
   });
 
   return app;

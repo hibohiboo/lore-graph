@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { ExtractedFactSchema, type ExtractedFact, type NpcPersona, type ConversationMessage } from '@repo/schema';
+import { ExtractedFactSchema, PersonaHintsSchema, type ExtractedFact, type NpcPersona, type PersonaHints, type ConversationMessage } from '@repo/schema';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -234,12 +234,6 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   });
 };
 
-const PersonaHintsSchema = z.object({
-  personalities: z.array(z.string()),
-  roles: z.array(z.string()),
-  knowledgeScopes: z.array(z.string()),
-});
-
 const PERSONA_HINTS_JSON_SCHEMA = {
   type: 'json_schema',
   json_schema: {
@@ -262,8 +256,8 @@ export const extractPersonaHintsFromReply = async (
   npcName: string,
   reply: string,
   existingPersona?: NpcPersona,
-): Promise<{ personalities: string[]; roles: string[]; knowledgeScopes: string[] }> => {
-  const empty = { personalities: [], roles: [], knowledgeScopes: [] };
+): Promise<PersonaHints> => {
+  const empty: PersonaHints = { personalities: [], roles: [], knowledgeScopes: [] };
 
   const existingText = existingPersona
     ? [
