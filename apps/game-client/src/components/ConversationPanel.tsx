@@ -11,31 +11,36 @@ export const ConversationPanel = ({ npcName }: Props) => {
   return (
     <section>
       <h2>{npcName} と話す</h2>
+      <p className="speaker-label">あなた：</p>
       <textarea
         value={playerMessage}
         onChange={(e) => setPlayerMessage(e.target.value)}
-        placeholder="メッセージを入力..."
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
+        }}
+        placeholder="メッセージを入力... (Ctrl+Enter で送信)"
         rows={3}
-        style={{ width: '100%' }}
       />
-      <button onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
+      <button className="btn-send" onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
         {loading ? '考え中...' : '送信'}
       </button>
-      {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
-      {npcReply && (
-        <div>
-          <h3>返答:</h3>
+      {error ? <p className="inline-error">エラー: {error}</p> : null}
+      {npcReply ? (
+        <div className="npc-reply">
+          <p className="npc-name-badge">{npcName}</p>
           <blockquote>{npcReply}</blockquote>
         </div>
-      )}
+      ) : null}
       {newFacts.length > 0 ? (
         <details>
-          <summary>新たに判明したFact ({newFacts.length}件)</summary>
-          <ul>
+          <summary>新たに判明したこと ({newFacts.length}件)</summary>
+          <ul className="fact-pill-list">
             {newFacts.map((f, i) => (
-              <li key={i}>
-                {f.subjectName} — {f.predicate} — {f.objectName}
-                <small> (確信度: {f.certainty})</small>
+              <li key={i} className="fact-pill">
+                <span className="fact-pill-subject">{f.subjectName}</span>
+                <span className="fact-pill-predicate">—{f.predicate}—</span>
+                <span className="fact-pill-object">{f.objectName}</span>
+                <span className="fact-pill-certainty">{Math.round(f.certainty * 100)}%</span>
               </li>
             ))}
           </ul>

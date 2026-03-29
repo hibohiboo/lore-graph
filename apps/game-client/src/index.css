@@ -234,6 +234,188 @@ li {
   font-size: 0.9rem;
 }
 
+/* ── Button variants ── */
+
+.btn-send {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  background: var(--accent);
+  border: 1px solid var(--border-lit);
+  color: var(--accent-text);
+}
+
+.btn-send:hover:not(:disabled) {
+  background: var(--accent-lit);
+  box-shadow: var(--glow);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger-lit);
+  color: #e09090;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-lit);
+  box-shadow: 0 0 8px rgba(180, 40, 40, 0.4);
+}
+
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+}
+
+/* ── Speaker label ── */
+
+.speaker-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+/* ── NPC reply block ── */
+
+.npc-reply {
+  margin-top: 1rem;
+}
+
+.npc-name-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-h);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+  opacity: 0.85;
+}
+
+.npc-name-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-h);
+  opacity: 0.7;
+}
+
+/* ── Tag chips (persona items) ── */
+
+.tag-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(110, 62, 10, 0.3);
+  border: 1px solid var(--border-lit);
+  border-radius: 2px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.tag-chip-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tag-chip-remove:hover {
+  color: #e09090;
+  box-shadow: none;
+  background: none;
+}
+
+/* ── Fact new pills ── */
+
+.fact-pill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fact-pill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.4rem;
+  background: rgba(20, 9, 4, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.fact-pill-subject { color: var(--text-h); opacity: 0.85; }
+.fact-pill-predicate { color: var(--text-muted); }
+.fact-pill-object { color: var(--text); }
+.fact-pill-certainty {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ── Error / Warning inline ── */
+
+.inline-error {
+  color: #e06060;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+.inline-warn {
+  color: #c09040;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+/* ── Category section (persona) ── */
+
+.category-section {
+  margin-bottom: 0.9rem;
+}
+
+.category-section + .category-section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.category-add-row {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.category-add-row input {
+  flex: 1;
+}
+
 /* ── Footer ── */
 
 footer {
