@@ -234,6 +234,90 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   });
 };
 
+const PersonaHintsSchema = z.object({
+  personalities: z.array(z.string()),
+  roles: z.array(z.string()),
+  knowledgeScopes: z.array(z.string()),
+});
+
+const PERSONA_HINTS_JSON_SCHEMA = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'persona_hints',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        personalities: { type: 'array', items: { type: 'string' } },
+        roles:         { type: 'array', items: { type: 'string' } },
+        knowledgeScopes: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['personalities', 'roles', 'knowledgeScopes'],
+      additionalProperties: false,
+    },
+  },
+} as const;
+
+export const extractPersonaHintsFromReply = async (
+  npcName: string,
+  reply: string,
+  existingPersona?: NpcPersona,
+): Promise<{ personalities: string[]; roles: string[]; knowledgeScopes: string[] }> => {
+  const empty = { personalities: [], roles: [], knowledgeScopes: [] };
+
+  const existingText = existingPersona
+    ? [
+        existingPersona.roles.length > 0
+          ? `職業・役割（登録済み）: ${existingPersona.roles.join('、')}` : '',
+        existingPersona.personalities.length > 0
+          ? `性格・口調（登録済み）: ${existingPersona.personalities.join('、')}` : '',
+        existingPersona.knowledgeScopes.length > 0
+          ? `知識範囲（登録済み）: ${existingPersona.knowledgeScopes.join('、')}` : '',
+      ].filter(Boolean).join('\n')
+    : '（未登録）';
+
+  const messages = [
+    {
+      role: 'system' as const,
+      content: `NPCの返答から、ペルソナとして保存すべき新しい情報を抽出してください。
+
+対象NPC: ${npcName}
+${existingText}
+
+抽出ルール：
+- すでに登録済みの情報は追加しない
+- 一人称（僕、私、あたし、俺 など）が判明したら personalities に「一人称は「X」」の形式で追加
+- 語尾・口調の特徴（〜だぜ、〜なんだよ、〜ね など）が判明したら personalities に追加
+- 職業・役割が新たに判明したら roles に追加
+- 知識範囲が新たに判明したら knowledgeScopes に追加
+- 値は簡潔な日本語フレーズで記述する（例：「一人称は「僕」」「語尾に「〜だぜ」を使う」）
+- 新情報がなければ全て空配列を返す`,
+    },
+    {
+      role: 'user' as const,
+      content: `NPCの返答:\n${reply}`,
+    },
+  ];
+  logToFile('extractPersonaHintsFromReply - REQUEST', messages.map((m) => `[${m.role}] ${m.content}`).join('\n'));
+
+  const response = await client.chat.completions.create({
+    model,
+    response_format: PERSONA_HINTS_JSON_SCHEMA,
+    messages,
+    max_tokens: 256,
+  });
+
+  const raw = response.choices[0]?.message.content ?? '{"personalities":[],"roles":[],"knowledgeScopes":[]}';
+  logToFile('extractPersonaHintsFromReply - RESPONSE', raw);
+
+  const parsed = PersonaHintsSchema.safeParse(JSON.parse(raw));
+  if (!parsed.success) {
+    logToFile('extractPersonaHintsFromReply - ERROR', parsed.error.message);
+    return empty;
+  }
+  return parsed.data;
+};
+
 export const extractFactsFromText = async (text: string, playerMessage?: string): Promise<ExtractedFact[]> => {
   const contextLine = playerMessage ? `プレイヤーの質問: ${playerMessage}\nNPCの返答: ${text}` : text;
   const messages = [
