@@ -1,2 +1,2 @@
 export { getDriver } from './driver';
-export { getNpcFacts, deleteNpcFact } from './npc-facts';
+export { getNpcFacts, deleteNpcFact, getAllFacts, hardDeleteFact, type FactRecord } from './npc-facts';
