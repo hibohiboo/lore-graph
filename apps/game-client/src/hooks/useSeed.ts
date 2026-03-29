@@ -1,15 +1,12 @@
 import { useState } from 'react';
+import { z } from 'zod';
+import { ExtractedFactSchema } from '@repo/schema';
 
-type ExtractedFact = {
-  subjectName: string;
-  predicate: string;
-  objectName: string;
-  certainty: number;
-};
+const SeedResponseSchema = z.object({
+  facts: z.array(ExtractedFactSchema),
+});
 
-type SeedResponse = {
-  facts: ExtractedFact[];
-};
+type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
 
 export const useSeed = () => {
   const [text, setText] = useState('');
@@ -29,10 +26,11 @@ export const useSeed = () => {
     })
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json() as Promise<SeedResponse>;
+        return res.json();
       })
       .then((data) => {
-        setRegisteredFacts(data.facts);
+        const parsed = SeedResponseSchema.parse(data);
+        setRegisteredFacts(parsed.facts);
         setText('');
       })
       .catch((err: unknown) => {
