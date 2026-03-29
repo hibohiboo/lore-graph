@@ -9,6 +9,7 @@ import {
   type PersonaHints,
   type ConversationMessage,
 } from '@repo/schema';
+import { type NpcDefinition } from '@repo/npc-mind';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -29,6 +30,7 @@ export const generateNpcReply = async (
   playerMessage: string,
   persona?: NpcPersona,
   history?: ConversationMessage[],
+  npcDef?: NpcDefinition,
 ): Promise<string> => {
   const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
@@ -36,21 +38,24 @@ export const generateNpcReply = async (
       ? '（まだ何も知らない）'
       : validFacts.map((f) => `- ${f}`).join('\n');
 
-  const personaText = persona
+  const defLines = npcDef
     ? [
-        persona.roles.length > 0
-          ? `職業・役割: ${persona.roles.join('、')}`
-          : '',
-        persona.personalities.length > 0
-          ? `性格・口調: ${persona.personalities.join('、')}`
-          : '',
-        persona.knowledgeScopes.length > 0
-          ? `知識範囲: ${persona.knowledgeScopes.join('、')}`
-          : '',
+        `職業・役割: ${npcDef.role}`,
+        `性格・口調: ${npcDef.personality}`,
+        `知識範囲: ${npcDef.knowledgeScope}`,
       ]
-        .filter(Boolean)
-        .join('\n') + '\n'
-    : '';
+    : [];
+
+  const dynamicLines = persona
+    ? [
+        persona.roles.length > 0 ? `追加された役割: ${persona.roles.join('、')}` : '',
+        persona.personalities.length > 0 ? `追加された口調: ${persona.personalities.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `追加された知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ].filter(Boolean)
+    : [];
+
+  const personaText = [...defLines, ...dynamicLines].join('\n');
+  const personaSection = personaText ? personaText + '\n' : '';
 
   const historyMessages = history
     ? history.slice(-HISTORY_LIMIT * 2).map((m) => ({
@@ -62,7 +67,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
     },
     ...historyMessages,
     { role: 'user' as const, content: playerMessage },
@@ -90,6 +95,7 @@ export const generateFactsFromQuestion = async (
   playerMessage: string,
   existingFacts: string[],
   persona?: NpcPersona,
+  npcDef?: NpcDefinition,
 ): Promise<ExtractedFact[]> => {
   const confirmedFacts = existingFacts.filter(
     (f) => !PLACEHOLDER_PATTERN.test(f),
@@ -99,22 +105,25 @@ export const generateFactsFromQuestion = async (
       ? '（まだ何も知らない）'
       : confirmedFacts.map((f) => `- ${f}`).join('\n');
 
-  const personaSection = persona
+  const defLines = npcDef
     ? [
-        persona.roles.length > 0
-          ? `NPC「${npcName}」の職業・役割: ${persona.roles.join('、')}`
-          : '',
-        persona.knowledgeScopes.length > 0
-          ? `NPC「${npcName}」の知識範囲: ${persona.knowledgeScopes.join('、')}`
-          : '',
-        '職業・役割に関連する質問には必ず事実を生成してください。',
+        `NPC「${npcName}」の職業・役割: ${npcDef.role}`,
+        `NPC「${npcName}」の知識範囲: ${npcDef.knowledgeScope}`,
       ]
-        .filter(Boolean)
-        .join('\n')
-    : `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
-また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
-例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
-職業・役割に関連する質問には必ず事実を生成してください。`;
+    : [
+        `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。`,
+        `また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。`,
+        `例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。`,
+      ];
+
+  const dynamicLines = persona
+    ? [
+        persona.roles.length > 0 ? `追加された役割: ${persona.roles.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `追加された知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ].filter(Boolean)
+    : [];
+
+  const personaSection = [...defLines, ...dynamicLines, '職業・役割に関連する質問には必ず事実を生成してください。'].join('\n');
 
   const messages = [
     {
