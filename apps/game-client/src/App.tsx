@@ -8,19 +8,28 @@ function App() {
   return (
     <main>
       <h1>Lore Graph</h1>
+      <p className="app-title-sub">— 酒場の娘に話しかけてみよう —</p>
+
       <ConversationPanel npcName="酒場の娘" />
+
       <hr />
-      <PersonaPanel />
-      <hr />
-      <SeedPanel />
-      <hr />
-      <FactListPanel />
-      <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
+
+      <details>
+        <summary style={{ color: 'var(--text-muted)', fontSize: '0.8rem', letterSpacing: '0.06em' }}>
+          マスター設定
+        </summary>
+        <div className="admin-section" style={{ marginTop: '0.75rem' }}>
+          <PersonaPanel />
+          <SeedPanel />
+          <FactListPanel />
+        </div>
+      </details>
+
+      <footer>
         <a
           href="https://github.com/hibohiboo/lore-graph"
           target="_blank"
           rel="noreferrer"
-          style={{ fontSize: '0.75rem', color: '#888', textDecoration: 'none' }}
         >
           GitHub
         </a>
@@ -30,4 +39,3 @@ function App() {
 }
 
 export default App;
-
