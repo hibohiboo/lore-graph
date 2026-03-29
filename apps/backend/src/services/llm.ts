@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { ExtractedFactSchema, type ExtractedFact, type NpcPersona } from '@repo/schema';
+import { ExtractedFactSchema, type ExtractedFact, type NpcPersona, type ConversationMessage } from '@repo/schema';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -14,11 +14,14 @@ const client = new OpenAI({
 });
 const model = process.env.OPENAI_CHAT_MODEL ?? 'qwen2.5:7b';
 
+const HISTORY_LIMIT = 5;
+
 export const generateNpcReply = async (
   npcName: string,
   knownFacts: string[],
   playerMessage: string,
   persona?: NpcPersona,
+  history?: ConversationMessage[],
 ): Promise<string> => {
   const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
@@ -36,11 +39,19 @@ export const generateNpcReply = async (
         .join('\n') + '\n'
     : '';
 
+  const historyMessages = history
+    ? history.slice(-HISTORY_LIMIT * 2).map((m) => ({
+        role: m.role === 'player' ? ('user' as const) : ('assistant' as const),
+        content: m.content,
+      }))
+    : [];
+
   const npcMessages = [
     {
       role: 'system' as const,
       content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
     },
+    ...historyMessages,
     { role: 'user' as const, content: playerMessage },
   ];
   logToFile(

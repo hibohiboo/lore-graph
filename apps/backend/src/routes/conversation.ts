@@ -4,10 +4,12 @@ import { type Driver } from 'neo4j-driver';
 import { getNpcFacts, getPersona } from '@repo/graph-db';
 import { generateNpcReply, generateFactsFromQuestion, extractFactsFromText } from '../services/llm.js';
 import { mergeFactsToGraph } from '../services/graph-writer.js';
+import { ConversationMessageSchema } from '@repo/schema';
 
 const ConversationRequestSchema = z.object({
   npcName: z.string(),
   playerMessage: z.string(),
+  history: z.array(ConversationMessageSchema).optional(),
 });
 
 export const createConversationRoute = (db: () => Driver) => {
@@ -18,7 +20,7 @@ export const createConversationRoute = (db: () => Driver) => {
     if (!body.success) {
       return c.json({ error: body.error.message }, 400);
     }
-    const { npcName, playerMessage } = body.data;
+    const { npcName, playerMessage, history } = body.data;
 
     const [existingFacts, worldFacts, persona] = await Promise.all([
       getNpcFacts(db(), npcName),
@@ -31,7 +33,7 @@ export const createConversationRoute = (db: () => Driver) => {
       await mergeFactsToGraph(db(), npcName, newFacts);
     }
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
-    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona);
+    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona, history);
 
     const replyFacts = await extractFactsFromText(npcReply, playerMessage);
     if (replyFacts.length > 0) {
