@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useConversation } from '../hooks/useConversation';
 
 const LoadingDots = () => (
@@ -13,12 +14,43 @@ type Props = {
 };
 
 export const ConversationPanel = ({ npcName }: Props) => {
-  const { playerMessage, setPlayerMessage, npcReply, newFacts, loading, error, sendMessage } =
+  const { playerMessage, setPlayerMessage, history, newFacts, loading, error, sendMessage } =
     useConversation(npcName);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [history, loading]);
 
   return (
     <section>
       <h2>{npcName} と話す</h2>
+
+      {history.length > 0 || loading ? (
+        <div className="chat-history" role="log" aria-label="会話履歴">
+          {history.map((msg, i) =>
+            msg.role === 'player' ? (
+              <div key={i} className="chat-bubble chat-bubble--player">
+                <span className="speaker-label">あなた：</span>
+                <p>{msg.content}</p>
+              </div>
+            ) : (
+              <div key={i} className="chat-bubble chat-bubble--npc">
+                <p className="npc-name-badge">{npcName}</p>
+                <blockquote>{msg.content}</blockquote>
+              </div>
+            )
+          )}
+          {loading ? (
+            <div className="chat-bubble chat-bubble--npc">
+              <p className="npc-name-badge">{npcName}</p>
+              <blockquote><LoadingDots /></blockquote>
+            </div>
+          ) : null}
+          <div ref={scrollRef} aria-hidden="true" />
+        </div>
+      ) : null}
+
       <label className="speaker-label" htmlFor="player-message">あなた：</label>
       <textarea
         id="player-message"
@@ -35,12 +67,7 @@ export const ConversationPanel = ({ npcName }: Props) => {
         {loading ? <LoadingDots /> : '送信'}
       </button>
       {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
-      {npcReply ? (
-        <div className="npc-reply" aria-live="polite">
-          <p className="npc-name-badge">{npcName}</p>
-          <blockquote>{npcReply}</blockquote>
-        </div>
-      ) : null}
+
       {newFacts.length > 0 ? (
         <details>
           <summary>新たに判明したこと ({newFacts.length}件)</summary>

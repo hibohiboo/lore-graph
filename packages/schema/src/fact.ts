@@ -20,6 +20,14 @@ export const FactRecordSchema = z.object({
 
 export type FactRecord = z.infer<typeof FactRecordSchema>;
 
+export const ConversationMessageSchema = z.object({
+  role: z.enum(['player', 'npc']),
+  content: z.string(),
+  timestamp: z.string().optional(),
+});
+
+export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
+
 export const NpcPersonaSchema = z.object({
   name: z.string(),
   roles: z.array(z.string()),

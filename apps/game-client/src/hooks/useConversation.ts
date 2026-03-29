@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { z } from 'zod';
-import { ExtractedFactSchema } from '@repo/schema';
+import { ExtractedFactSchema, ConversationMessageSchema } from '@repo/schema';
 
 const ConversationResponseSchema = z.object({
   npcReply: z.string(),
@@ -8,10 +8,11 @@ const ConversationResponseSchema = z.object({
 });
 
 type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
+export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
 
 export const useConversation = (npcName: string) => {
   const [playerMessage, setPlayerMessage] = useState('');
-  const [npcReply, setNpcReply] = useState<string | null>(null);
+  const [history, setHistory] = useState<ConversationMessage[]>([]);
   const [newFacts, setNewFacts] = useState<ExtractedFact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +22,13 @@ export const useConversation = (npcName: string) => {
     setLoading(true);
     setError(null);
 
+    const snapshot = playerMessage;
+    const historySnapshot = history;
+
     fetch('/api/conversation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ npcName, playerMessage }),
+      body: JSON.stringify({ npcName, playerMessage: snapshot, history: historySnapshot }),
     })
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -32,7 +36,12 @@ export const useConversation = (npcName: string) => {
       })
       .then((data) => {
         const parsed = ConversationResponseSchema.parse(data);
-        setNpcReply(parsed.npcReply);
+        const now = new Date().toISOString();
+        setHistory((prev) => [
+          ...prev,
+          { role: 'player' as const, content: snapshot, timestamp: now },
+          { role: 'npc' as const, content: parsed.npcReply, timestamp: now },
+        ]);
         setNewFacts(parsed.newFacts);
         setPlayerMessage('');
       })
@@ -44,5 +53,5 @@ export const useConversation = (npcName: string) => {
       });
   };
 
-  return { playerMessage, setPlayerMessage, npcReply, newFacts, loading, error, sendMessage };
+  return { playerMessage, setPlayerMessage, history, newFacts, loading, error, sendMessage };
 };
