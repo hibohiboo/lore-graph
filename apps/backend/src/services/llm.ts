@@ -19,10 +19,11 @@ export const generateNpcReply = async (
   knownFacts: string[],
   playerMessage: string,
 ): Promise<string> => {
+  const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
-    knownFacts.length === 0
+    validFacts.length === 0
       ? '（まだ何も知らない）'
-      : knownFacts.map((f) => `- ${f}`).join('\n');
+      : validFacts.map((f) => `- ${f}`).join('\n');
 
   const npcMessages = [
     {
@@ -182,7 +183,13 @@ const parseFacts = (raw: string): ExtractedFact[] => {
     logToFile('parseFacts - ERROR', parsed.error.message);
     return [];
   }
-  return parsed.data.facts.map((f) => ({ ...f, predicate: normalizePredicate(f.predicate) }));
+  return parsed.data.facts.flatMap((f) => {
+    if (PLACEHOLDER_PATTERN.test(f.objectName)) {
+      logToFile('parseFacts - SKIP', `placeholder objectName: "${f.objectName}"`);
+      return [];
+    }
+    return [{ ...f, predicate: normalizePredicate(f.predicate) }];
+  });
 };
 
 export const extractFacts = async (
