@@ -1,5 +1,13 @@
 import { useConversation } from '../hooks/useConversation';
 
+const LoadingDots = () => (
+  <span className="loading-dots" aria-label="考え中">
+    <span className="loading-dot" />
+    <span className="loading-dot" />
+    <span className="loading-dot" />
+  </span>
+);
+
 type Props = {
   npcName: string;
 };
@@ -22,7 +30,7 @@ export const ConversationPanel = ({ npcName }: Props) => {
         rows={3}
       />
       <button className="btn-send" onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
-        {loading ? '考え中...' : '送信'}
+        {loading ? <LoadingDots /> : '送信'}
       </button>
       {error ? <p className="inline-error">エラー: {error}</p> : null}
       {npcReply ? (
