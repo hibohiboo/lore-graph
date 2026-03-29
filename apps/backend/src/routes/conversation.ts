@@ -33,7 +33,7 @@ export const createConversationRoute = (db: () => Driver) => {
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
     const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona);
 
-    const replyFacts = await extractFactsFromText(npcReply);
+    const replyFacts = await extractFactsFromText(npcReply, playerMessage);
     if (replyFacts.length > 0) {
       await mergeFactsToGraph(db(), npcName, replyFacts);
     }
