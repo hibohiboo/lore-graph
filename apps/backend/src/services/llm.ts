@@ -39,7 +39,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。必ず提供された情報のみを使って答えてください。情報の確信度が低い場合（推測・噂・うろ覚え）は「たしか〜」「〜と聞いています」などの曖昧な表現を使い、知らないことは「わかりません」などと自然に答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
     },
     { role: 'user' as const, content: playerMessage },
   ];
@@ -76,7 +76,6 @@ export const generateFactsFromQuestion = async (
   const personaSection = persona
     ? [
         persona.roles.length > 0 ? `NPC「${npcName}」の職業・役割: ${persona.roles.join('、')}` : '',
-        persona.personalities.length > 0 ? `NPC「${npcName}」の性格: ${persona.personalities.join('、')}` : '',
         persona.knowledgeScopes.length > 0 ? `NPC「${npcName}」の知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
         '職業・役割に関連する質問には必ず事実を生成してください。',
       ]
@@ -107,6 +106,7 @@ ${existingText}
 - NPCの職業・役割に関連する質問も推測でよいので必ず事実を生成する
 - {"facts": []} を返すのは、NPCが全く関与しえない第三者・遠方・専門外の話題のみ
 - subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
+- objectNameは中立的・客観的な事実の表現にする。語尾・口調・感情表現（「だぜ」「だよ」「ね」など）は絶対に含めない
 - objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
 - predicateは必ず以下のいずれかを使用する：
   - is（状態・性質・名前）
