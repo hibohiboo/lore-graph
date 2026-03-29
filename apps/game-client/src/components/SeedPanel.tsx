@@ -35,16 +35,30 @@ export const SeedPanel = () => {
       {worldFacts.length > 0 ? (
         <details open>
           <summary>登録済み世界設定 ({worldFacts.length}件)</summary>
-          <ul>
-            {worldFacts.map((f, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>{f}</span>
-                <button onClick={() => deleteFact(f)} style={{ fontSize: '0.75rem' }}>
-                  削除
-                </button>
-              </li>
-            ))}
-          </ul>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>subject</th>
+                <th style={{ textAlign: 'left' }}>predicate</th>
+                <th style={{ textAlign: 'left' }}>object</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {worldFacts.map((f, i) => (
+                <tr key={i}>
+                  <td>{f.subject}</td>
+                  <td>{f.predicate}</td>
+                  <td>{f.object}</td>
+                  <td>
+                    <button onClick={() => deleteFact(f)} style={{ fontSize: '0.75rem' }}>
+                      削除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </details>
       ) : null}
     </section>

@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { ExtractedFactSchema, type ExtractedFact } from '@repo/schema';
+import { ExtractedFactSchema, type ExtractedFact, type NpcPersona } from '@repo/schema';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -18,6 +18,7 @@ export const generateNpcReply = async (
   npcName: string,
   knownFacts: string[],
   playerMessage: string,
+  persona?: NpcPersona,
 ): Promise<string> => {
   const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
@@ -25,10 +26,20 @@ export const generateNpcReply = async (
       ? '（まだ何も知らない）'
       : validFacts.map((f) => `- ${f}`).join('\n');
 
+  const personaText = persona
+    ? [
+        persona.roles.length > 0 ? `職業・役割: ${persona.roles.join('、')}` : '',
+        persona.personalities.length > 0 ? `性格・口調: ${persona.personalities.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n') + '\n'
+    : '';
+
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。必ず提供された情報のみを使って答えてください。情報の確信度が低い場合（推測・噂・うろ覚え）は「たしか〜」「〜と聞いています」などの曖昧な表現を使い、知らないことは「わかりません」などと自然に答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
     },
     { role: 'user' as const, content: playerMessage },
   ];
@@ -40,6 +51,7 @@ export const generateNpcReply = async (
   const response = await client.chat.completions.create({
     model,
     messages: npcMessages,
+    max_tokens: 512,
   });
 
   const reply = response.choices[0]?.message.content ?? '';
@@ -53,12 +65,26 @@ export const generateFactsFromQuestion = async (
   npcName: string,
   playerMessage: string,
   existingFacts: string[],
+  persona?: NpcPersona,
 ): Promise<ExtractedFact[]> => {
   const confirmedFacts = existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const existingText =
     confirmedFacts.length === 0
       ? '（まだ何も知らない）'
       : confirmedFacts.map((f) => `- ${f}`).join('\n');
+
+  const personaSection = persona
+    ? [
+        persona.roles.length > 0 ? `NPC「${npcName}」の職業・役割: ${persona.roles.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `NPC「${npcName}」の知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+        '職業・役割に関連する質問には必ず事実を生成してください。',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
+また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
+例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
+職業・役割に関連する質問には必ず事実を生成してください。`;
 
   const messages = [
     {
@@ -67,10 +93,7 @@ export const generateFactsFromQuestion = async (
 NPC「${npcName}」がプレイヤーの質問に答えるために必要な事実を生成してください。
 
 【重要】プレイヤーが「あなた」と言った場合、それはNPC「${npcName}」自身を指します。
-NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
-また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
-例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
-職業・役割に関連する質問には必ず事実を生成してください。
+${personaSection}
 
 NPCがすでに知っている情報：
 ${existingText}
@@ -83,6 +106,7 @@ ${existingText}
 - NPCの職業・役割に関連する質問も推測でよいので必ず事実を生成する
 - {"facts": []} を返すのは、NPCが全く関与しえない第三者・遠方・専門外の話題のみ
 - subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
+- objectNameは中立的・客観的な事実の表現にする。語尾・口調・感情表現（「だぜ」「だよ」「ね」など）は絶対に含めない
 - objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
 - predicateは必ず以下のいずれかを使用する：
   - is（状態・性質・名前）
@@ -113,6 +137,7 @@ ${existingText}
     model,
     response_format: FACTS_JSON_SCHEMA,
     messages,
+    max_tokens: 512,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
@@ -226,6 +251,7 @@ predicateは必ず以下のいずれかを使用してください：
     model,
     response_format: FACTS_JSON_SCHEMA,
     messages,
+    max_tokens: 512,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
@@ -233,43 +259,3 @@ predicateは必ず以下のいずれかを使用してください：
   return parseFacts(raw);
 };
 
-export const extractFacts = async (
-  npcName: string,
-  playerMessage: string,
-  npcReply: string,
-): Promise<ExtractedFact[]> => {
-  const extractMessages = [
-    {
-      role: 'system' as const,
-      content: `NPCの発言から、NPCが述べている事実のみをJSONで返してください。
-プレイヤーの発言（質問・あいさつなど）は無視し、NPCの発言に含まれる情報だけを抽出してください。
-形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}
-事実がなければ {"facts": []} を返してください。
-predicateは必ず以下のいずれかを使用してください：
-- is（状態・性質）
-- located_in（空間的な所在）
-- related_to（関係・つながり）
-- part_of（構成要素・所属）
-- caused_by（因果）
-- seeks（意図・欲求）`,
-    },
-    {
-      role: 'user' as const,
-      content: `（参考・プレイヤーの質問）: ${playerMessage}\n（${npcName}の返答）: ${npcReply}`,
-    },
-  ];
-  logToFile(
-    'extractFacts - REQUEST',
-    extractMessages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
-  );
-
-  const response = await client.chat.completions.create({
-    model,
-    response_format: FACTS_JSON_SCHEMA,
-    messages: extractMessages,
-  });
-
-  const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
-  logToFile('extractFacts - RESPONSE', raw);
-  return parseFacts(raw);
-};

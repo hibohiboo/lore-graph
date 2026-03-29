@@ -76,6 +76,7 @@
       "name": "@repo/graph-db",
       "version": "0.0.0",
       "dependencies": {
+        "@repo/schema": "*",
         "neo4j-driver": "^6.0.1",
         "vitest": "^4.1.2",
         "zod": "^4.3.6",
@@ -86,6 +87,19 @@
         "@testcontainers/neo4j": "^11.13.0",
         "eslint": "^10.1.0",
         "testcontainers": "^11.13.0",
+      },
+    },
+    "packages/npc-mind": {
+      "name": "@repo/npc-mind",
+      "version": "0.0.0",
+      "dependencies": {
+        "@repo/schema": "*",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
+        "eslint": "^10.1.0",
       },
     },
     "packages/schema": {
@@ -237,6 +251,8 @@
     "@repo/eslint-config": ["@repo/eslint-config@workspace:packages/eslint-config"],
 
     "@repo/graph-db": ["@repo/graph-db@workspace:packages/graph-db"],
+
+    "@repo/npc-mind": ["@repo/npc-mind@workspace:packages/npc-mind"],
 
     "@repo/schema": ["@repo/schema@workspace:packages/schema"],
 
