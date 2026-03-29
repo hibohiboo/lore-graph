@@ -51,6 +51,7 @@ export const generateNpcReply = async (
   const response = await client.chat.completions.create({
     model,
     messages: npcMessages,
+    max_tokens: 512,
   });
 
   const reply = response.choices[0]?.message.content ?? '';
@@ -136,6 +137,7 @@ ${existingText}
     model,
     response_format: FACTS_JSON_SCHEMA,
     messages,
+    max_tokens: 512,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
@@ -249,6 +251,7 @@ predicateは必ず以下のいずれかを使用してください：
     model,
     response_format: FACTS_JSON_SCHEMA,
     messages,
+    max_tokens: 512,
   });
 
   const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
