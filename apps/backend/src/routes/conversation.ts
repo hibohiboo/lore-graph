@@ -20,12 +20,16 @@ export const createConversationRoute = (db: () => Driver) => {
     }
     const { npcName, playerMessage } = body.data;
 
-    const existingFacts = await getNpcFacts(db(), npcName);
-    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, existingFacts);
+    const [existingFacts, worldFacts] = await Promise.all([
+      getNpcFacts(db(), npcName),
+      getNpcFacts(db(), '世界設定'),
+    ]);
+    const allExistingFacts = [...existingFacts, ...worldFacts];
+    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, allExistingFacts);
     if (newFacts.length > 0) {
       await mergeFactsToGraph(db(), npcName, newFacts);
     }
-    const allFacts = await getNpcFacts(db(), npcName);
+    const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
     const npcReply = await generateNpcReply(npcName, allFacts, playerMessage);
 
     return c.json({ npcReply, newFacts });

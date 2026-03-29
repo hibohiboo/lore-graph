@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getDriver } from '@repo/graph-db';
 import { createConversationRoute } from './routes/conversation.js';
+import { createSeedRoute } from './routes/seed.js';
 
 let driver: ReturnType<typeof getDriver> | null = null;
 const db = () => (driver ??= getDriver());
@@ -15,5 +16,6 @@ app.get('/', (c) => {
 });
 
 app.route('/api/conversation', createConversationRoute(db));
+app.route('/api/seed', createSeedRoute(db));
 
 export default app;
