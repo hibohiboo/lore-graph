@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ExtractedFactSchema = z.object({
   subjectName: z.string(),
-  predicate: z.enum(['is', 'located_in', 'related_to', 'part_of', 'caused_by', 'seeks']),
+  predicate: z.string(),
   objectName: z.string(),
   certainty: z.number().min(0).max(1),
   at: z.string().optional(),

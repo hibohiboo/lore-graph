@@ -12,13 +12,13 @@ type ExtractedFact = {
 
 type ConversationResponse = {
   npcReply: string;
-  extractedFacts: ExtractedFact[];
+  newFacts: ExtractedFact[];
 };
 
 export const useConversation = (npcName: string) => {
   const [playerMessage, setPlayerMessage] = useState('');
   const [npcReply, setNpcReply] = useState<string | null>(null);
-  const [extractedFacts, setExtractedFacts] = useState<ExtractedFact[]>([]);
+  const [newFacts, setNewFacts] = useState<ExtractedFact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ export const useConversation = (npcName: string) => {
       })
       .then((data) => {
         setNpcReply(data.npcReply);
-        setExtractedFacts(data.extractedFacts);
+        setNewFacts(data.newFacts);
         setPlayerMessage('');
       })
       .catch((err: unknown) => {
@@ -49,5 +49,5 @@ export const useConversation = (npcName: string) => {
       });
   };
 
-  return { playerMessage, setPlayerMessage, npcReply, extractedFacts, loading, error, sendMessage };
+  return { playerMessage, setPlayerMessage, npcReply, newFacts, loading, error, sendMessage };
 };
