@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { ExtractedFactSchema } from '@repo/schema';
 
@@ -7,14 +7,38 @@ const SeedResponseSchema = z.object({
   warning: z.string().optional(),
 });
 
+const WorldFactsResponseSchema = z.object({
+  facts: z.array(z.string()),
+});
+
 type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
 
 export const useSeed = () => {
   const [text, setText] = useState('');
   const [registeredFacts, setRegisteredFacts] = useState<ExtractedFact[]>([]);
+  const [worldFacts, setWorldFacts] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+
+  const fetchWorldFacts = useCallback(() => {
+    fetch('/api/seed')
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return res.json();
+      })
+      .then((data) => {
+        const parsed = WorldFactsResponseSchema.parse(data);
+        setWorldFacts(parsed.facts);
+      })
+      .catch(() => {
+        // 一覧取得失敗は無視（登録・削除時に再取得）
+      });
+  }, []);
+
+  useEffect(() => {
+    fetchWorldFacts();
+  }, [fetchWorldFacts]);
 
   const submit = async () => {
     if (!text.trim()) return;
@@ -34,8 +58,12 @@ export const useSeed = () => {
       .then((data) => {
         const parsed = SeedResponseSchema.parse(data);
         setRegisteredFacts(parsed.facts);
-        if (parsed.warning) setWarning(parsed.warning);
-        else setText('');
+        if (parsed.warning) {
+          setWarning(parsed.warning);
+        } else {
+          setText('');
+          fetchWorldFacts();
+        }
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -45,5 +73,28 @@ export const useSeed = () => {
       });
   };
 
-  return { text, setText, registeredFacts, loading, error, warning, submit };
+  const deleteFact = (factStr: string) => {
+    // "subject predicate object" 形式をパース（" (certainty:X.X)" ラベルは除く）
+    const certIdx = factStr.indexOf(' (certainty:');
+    const clean = certIdx !== -1 ? factStr.slice(0, certIdx) : factStr;
+    const parts = clean.split(' ');
+    if (parts.length < 3) return;
+    const [subjectName, predicate, ...rest] = parts;
+    const objectName = rest.join(' ');
+
+    fetch('/api/seed', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subjectName, predicate, objectName }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        fetchWorldFacts();
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      });
+  };
+
+  return { text, setText, registeredFacts, worldFacts, loading, error, warning, submit, deleteFact };
 };

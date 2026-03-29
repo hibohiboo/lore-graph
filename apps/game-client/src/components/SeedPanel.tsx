@@ -1,7 +1,8 @@
 import { useSeed } from '../hooks/useSeed';
 
 export const SeedPanel = () => {
-  const { text, setText, registeredFacts, loading, error, warning, submit } = useSeed();
+  const { text, setText, registeredFacts, worldFacts, loading, error, warning, submit, deleteFact } =
+    useSeed();
 
   return (
     <section>
@@ -20,12 +21,27 @@ export const SeedPanel = () => {
       {warning && <p style={{ color: 'orange' }}>⚠ {warning}</p>}
       {registeredFacts.length > 0 ? (
         <details open>
-          <summary>登録されたFact ({registeredFacts.length}件)</summary>
+          <summary>今回登録されたFact ({registeredFacts.length}件)</summary>
           <ul>
             {registeredFacts.map((f, i) => (
               <li key={i}>
                 {f.subjectName} — {f.predicate} — {f.objectName}
                 <small> (確信度: {f.certainty})</small>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {worldFacts.length > 0 ? (
+        <details open>
+          <summary>登録済み世界設定 ({worldFacts.length}件)</summary>
+          <ul>
+            {worldFacts.map((f, i) => (
+              <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>{f}</span>
+                <button onClick={() => deleteFact(f)} style={{ fontSize: '0.75rem' }}>
+                  削除
+                </button>
               </li>
             ))}
           </ul>
