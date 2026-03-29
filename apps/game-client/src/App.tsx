@@ -8,13 +8,13 @@ function App() {
   return (
     <main>
       <h1>Lore Graph</h1>
+      <ConversationPanel npcName="酒場の娘" />
+      <hr />
       <PersonaPanel />
       <hr />
       <SeedPanel />
       <hr />
       <FactListPanel />
-      <hr />
-      <ConversationPanel npcName="酒場の娘" />
     </main>
   );
 }
