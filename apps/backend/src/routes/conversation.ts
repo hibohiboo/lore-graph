@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { type Driver } from 'neo4j-driver';
 import { getNpcFacts, getPersona, upsertPersona } from '@repo/graph-db';
+import { getNpcDefinition } from '@repo/npc-mind';
 import { generateNpcReply, generateFactsFromQuestion, extractFactsFromText, extractPersonaHintsFromReply } from '../services/llm.js';
 import { mergeFactsToGraph } from '../services/graph-writer.js';
 import { ConversationMessageSchema } from '@repo/schema';
@@ -22,18 +23,19 @@ export const createConversationRoute = (db: () => Driver) => {
     }
     const { npcName, playerMessage, history } = body.data;
 
+    const npcDef = getNpcDefinition(npcName);
     const [existingFacts, worldFacts, persona] = await Promise.all([
       getNpcFacts(db(), npcName),
       getNpcFacts(db(), '世界設定'),
       getPersona(db(), npcName),
     ]);
     const allExistingFacts = [...existingFacts, ...worldFacts];
-    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, allExistingFacts, persona);
+    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, allExistingFacts, persona, npcDef);
     if (newFacts.length > 0) {
       await mergeFactsToGraph(db(), npcName, newFacts);
     }
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
-    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona, history);
+    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona, history, npcDef);
 
     const [replyFacts, personaHints] = await Promise.all([
       extractFactsFromText(npcReply, playerMessage),

@@ -699,6 +699,38 @@ li {
   top: 0;
 }
 
+/* ── NPC Selector ── */
+
+.npc-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.npc-selector__label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.npc-selector__select {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border-lit);
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.npc-selector__select:focus {
+  outline: 2px solid var(--border-lit);
+  outline-offset: 2px;
+}
+
 /* ── Footer ── */
 
 footer {
