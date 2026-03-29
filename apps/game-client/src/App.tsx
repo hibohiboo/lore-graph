@@ -6,7 +6,8 @@ import { PersonaPanel } from './components/PersonaPanel';
 
 function App() {
   return (
-    <main>
+    <main id="main">
+      <a href="#main" className="skip-link">メインコンテンツへスキップ</a>
       <h1>Lore Graph</h1>
       <p className="app-title-sub">— 酒場の娘に話しかけてみよう —</p>
 

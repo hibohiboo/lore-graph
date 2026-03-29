@@ -19,22 +19,24 @@ export const ConversationPanel = ({ npcName }: Props) => {
   return (
     <section>
       <h2>{npcName} と話す</h2>
-      <p className="speaker-label">あなた：</p>
+      <label className="speaker-label" htmlFor="player-message">あなた：</label>
       <textarea
+        id="player-message"
         value={playerMessage}
         onChange={(e) => setPlayerMessage(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
         }}
-        placeholder="メッセージを入力... (Ctrl+Enter で送信)"
+        placeholder="メッセージを入力… (Ctrl+Enter で送信)"
         rows={3}
+        aria-label={`${npcName}へのメッセージ`}
       />
-      <button className="btn-send" onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
+      <button type="button" className="btn-send" onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
         {loading ? <LoadingDots /> : '送信'}
       </button>
-      {error ? <p className="inline-error">エラー: {error}</p> : null}
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
       {npcReply ? (
-        <div className="npc-reply">
+        <div className="npc-reply" aria-live="polite">
           <p className="npc-name-badge">{npcName}</p>
           <blockquote>{npcReply}</blockquote>
         </div>

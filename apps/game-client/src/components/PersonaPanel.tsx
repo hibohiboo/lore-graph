@@ -24,6 +24,7 @@ const CategorySection = ({
   onRemove: (i: number) => void;
 }) => {
   const [input, setInput] = useState('');
+  const inputId = `persona-input-${label}`;
   const handleAdd = () => {
     const v = input.trim();
     if (!v) return;
@@ -38,19 +39,29 @@ const CategorySection = ({
           {items.map((item, i) => (
             <li key={i} className="tag-chip">
               <span>{item}</span>
-              <button className="tag-chip-remove" onClick={() => onRemove(i)} title="削除">×</button>
+              <button
+                type="button"
+                className="tag-chip-remove"
+                onClick={() => onRemove(i)}
+                aria-label={`${label}「${item}」を削除`}
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>
       ) : null}
       <div className="category-add-row">
+        <label htmlFor={inputId} className="sr-only">{label}を入力</label>
         <input
+          id={inputId}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder={`${label}を入力`}
+          placeholder={`${label}を入力…`}
+          autoComplete="off"
         />
-        <button onClick={handleAdd} disabled={!input.trim()}>追加</button>
+        <button type="button" onClick={handleAdd} disabled={!input.trim()}>追加</button>
       </div>
     </div>
   );
@@ -73,10 +84,15 @@ export const PersonaPanel = () => {
     upsertPersona({ ...current, [category]: current[category].filter((_, i) => i !== index) });
   };
 
+  const handleDeleteAll = () => {
+    if (!window.confirm(`「${NPC_NAME}」のペルソナをすべて削除しますか？`)) return;
+    deletePersona(NPC_NAME);
+  };
+
   return (
     <section>
       <h2>NPCペルソナ（{NPC_NAME}）</h2>
-      {error ? <p className="inline-error">エラー: {error}</p> : null}
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
       {(Object.keys(LABELS) as Category[]).map((cat) => (
         <CategorySection
           key={cat}
@@ -87,7 +103,7 @@ export const PersonaPanel = () => {
         />
       ))}
       {personas.some((p) => p.name === NPC_NAME) ? (
-        <button className="btn-danger" onClick={() => deletePersona(NPC_NAME)}>
+        <button type="button" className="btn-danger" onClick={handleDeleteAll}>
           ペルソナをすべて削除
         </button>
       ) : null}

@@ -7,17 +7,20 @@ export const SeedPanel = () => {
   return (
     <section>
       <h2>世界設定の登録</h2>
+      <label className="sr-only" htmlFor="seed-text">世界設定テキスト</label>
       <textarea
+        id="seed-text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="例）酒場の名前は銀嶺亭です。オーナーは田中さんです。"
+        placeholder="例）酒場の名前は銀嶺亭です。オーナーは田中さんです。…"
         rows={4}
+        aria-label="世界設定テキストを入力"
       />
-      <button className="btn-send" onClick={submit} disabled={loading || !text.trim()}>
-        {loading ? '登録中...' : '登録'}
+      <button type="button" className="btn-send" onClick={submit} disabled={loading || !text.trim()}>
+        {loading ? '登録中…' : '登録'}
       </button>
-      {error ? <p className="inline-error">エラー: {error}</p> : null}
-      {warning ? <p className="inline-warn">⚠ {warning}</p> : null}
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
+      {warning ? <p className="inline-warn" role="status">⚠ {warning}</p> : null}
       {registeredFacts.length > 0 ? (
         <details open>
           <summary>今回登録されたFact ({registeredFacts.length}件)</summary>
@@ -52,7 +55,14 @@ export const SeedPanel = () => {
                   <td>{f.predicate}</td>
                   <td>{f.object}</td>
                   <td>
-                    <button className="btn-sm btn-danger" onClick={() => deleteFact(f)}>削除</button>
+                    <button
+                      type="button"
+                      className="btn-sm btn-danger"
+                      onClick={() => deleteFact(f)}
+                      aria-label={`「${f.subject} ${f.predicate} ${f.object}」を削除`}
+                    >
+                      削除
+                    </button>
                   </td>
                 </tr>
               ))}
