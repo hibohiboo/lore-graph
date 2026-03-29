@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { ExtractedFactSchema, type ExtractedFact } from '@repo/schema';
+import { ExtractedFactSchema, type ExtractedFact, type NpcPersona } from '@repo/schema';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -18,6 +18,7 @@ export const generateNpcReply = async (
   npcName: string,
   knownFacts: string[],
   playerMessage: string,
+  persona?: NpcPersona,
 ): Promise<string> => {
   const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
@@ -25,10 +26,14 @@ export const generateNpcReply = async (
       ? '（まだ何も知らない）'
       : validFacts.map((f) => `- ${f}`).join('\n');
 
+  const personaText = persona
+    ? `職業・役割: ${persona.role}\n性格・口調: ${persona.personality}\n知識範囲: ${persona.knowledgeScope}\n`
+    : '';
+
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。必ず提供された情報のみを使って答えてください。情報の確信度が低い場合（推測・噂・うろ覚え）は「たしか〜」「〜と聞いています」などの曖昧な表現を使い、知らないことは「わかりません」などと自然に答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。必ず提供された情報のみを使って答えてください。情報の確信度が低い場合（推測・噂・うろ覚え）は「たしか〜」「〜と聞いています」などの曖昧な表現を使い、知らないことは「わかりません」などと自然に答えてください。`,
     },
     { role: 'user' as const, content: playerMessage },
   ];
@@ -53,12 +58,23 @@ export const generateFactsFromQuestion = async (
   npcName: string,
   playerMessage: string,
   existingFacts: string[],
+  persona?: NpcPersona,
 ): Promise<ExtractedFact[]> => {
   const confirmedFacts = existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const existingText =
     confirmedFacts.length === 0
       ? '（まだ何も知らない）'
       : confirmedFacts.map((f) => `- ${f}`).join('\n');
+
+  const personaSection = persona
+    ? `NPC「${npcName}」の職業・役割: ${persona.role}
+NPC「${npcName}」の性格: ${persona.personality}
+NPC「${npcName}」の知識範囲: ${persona.knowledgeScope}
+職業・役割に関連する質問には必ず事実を生成してください。`
+    : `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
+また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
+例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
+職業・役割に関連する質問には必ず事実を生成してください。`;
 
   const messages = [
     {
@@ -67,10 +83,7 @@ export const generateFactsFromQuestion = async (
 NPC「${npcName}」がプレイヤーの質問に答えるために必要な事実を生成してください。
 
 【重要】プレイヤーが「あなた」と言った場合、それはNPC「${npcName}」自身を指します。
-NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
-また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
-例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
-職業・役割に関連する質問には必ず事実を生成してください。
+${personaSection}
 
 NPCがすでに知っている情報：
 ${existingText}

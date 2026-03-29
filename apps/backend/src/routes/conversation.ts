@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { type Driver } from 'neo4j-driver';
-import { getNpcFacts } from '@repo/graph-db';
+import { getNpcFacts, getPersona } from '@repo/graph-db';
 import { generateNpcReply, generateFactsFromQuestion } from '../services/llm.js';
 import { mergeFactsToGraph } from '../services/graph-writer.js';
 
@@ -20,17 +20,18 @@ export const createConversationRoute = (db: () => Driver) => {
     }
     const { npcName, playerMessage } = body.data;
 
-    const [existingFacts, worldFacts] = await Promise.all([
+    const [existingFacts, worldFacts, persona] = await Promise.all([
       getNpcFacts(db(), npcName),
       getNpcFacts(db(), '世界設定'),
+      getPersona(db(), npcName),
     ]);
     const allExistingFacts = [...existingFacts, ...worldFacts];
-    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, allExistingFacts);
+    const newFacts = await generateFactsFromQuestion(npcName, playerMessage, allExistingFacts, persona);
     if (newFacts.length > 0) {
       await mergeFactsToGraph(db(), npcName, newFacts);
     }
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
-    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage);
+    const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona);
 
     return c.json({ npcReply, newFacts });
   });

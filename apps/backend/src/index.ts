@@ -4,6 +4,7 @@ import { getDriver } from '@repo/graph-db';
 import { createConversationRoute } from './routes/conversation.js';
 import { createSeedRoute } from './routes/seed.js';
 import { createFactsRoute } from './routes/facts.js';
+import { createPersonasRoute } from './routes/personas.js';
 
 let driver: ReturnType<typeof getDriver> | null = null;
 const db = () => (driver ??= getDriver());
@@ -19,5 +20,6 @@ app.get('/', (c) => {
 app.route('/api/conversation', createConversationRoute(db));
 app.route('/api/seed', createSeedRoute(db));
 app.route('/api/facts', createFactsRoute(db));
+app.route('/api/personas', createPersonasRoute(db));
 
 export default app;
