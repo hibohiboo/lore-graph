@@ -1,19 +1,13 @@
 import { useState } from 'react';
+import { z } from 'zod';
+import { ExtractedFactSchema } from '@repo/schema';
 
-type ExtractedFact = {
-  subjectName: string;
-  predicate: string;
-  objectName: string;
-  certainty: number;
-  at?: string;
-  since?: string;
-  until?: string;
-};
+const ConversationResponseSchema = z.object({
+  npcReply: z.string(),
+  newFacts: z.array(ExtractedFactSchema),
+});
 
-type ConversationResponse = {
-  npcReply: string;
-  newFacts: ExtractedFact[];
-};
+type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
 
 export const useConversation = (npcName: string) => {
   const [playerMessage, setPlayerMessage] = useState('');
@@ -34,11 +28,12 @@ export const useConversation = (npcName: string) => {
     })
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json() as Promise<ConversationResponse>;
+        return res.json();
       })
       .then((data) => {
-        setNpcReply(data.npcReply);
-        setNewFacts(data.newFacts);
+        const parsed = ConversationResponseSchema.parse(data);
+        setNpcReply(parsed.npcReply);
+        setNewFacts(parsed.newFacts);
         setPlayerMessage('');
       })
       .catch((err: unknown) => {

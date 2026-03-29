@@ -1,4 +1,4 @@
-# 振り返りレポート — lore-graph (Fact-first アーキテクチャ改善)
+# 振り返りレポート — lore-graph (Fact-first + シードデータ登録)
 
 作成日: 2026-03-29
 
@@ -7,115 +7,143 @@
 ## 1. 概要
 
 NPCとの会話を通じて知識グラフを構築するナラティブ探索ゲームのプロトタイプ。
-前回MVPから「Fact-first アーキテクチャ」へ移行し、NPC の hallucination によるグラフ汚染を防ぐコアループの品質改善を行った。
+今回のセッションでは2つのフェーズを完了した：
+1. **Fact-first アーキテクチャ移行**：NPC の hallucination によるグラフ汚染を防ぐ
+2. **世界設定シードデータ登録機能**：自由記述テキストから facts を生成しグラフに保存
 
 ---
 
-## 2. 今回やったこと
+## 2. 作ったもの
 
-### アーキテクチャ変更：Fact-first フロー
+### 現在のアーキテクチャ
 
-**Before（MVP時）:**
 ```
-既存facts取得 → NPC返答生成（hallucination可） → facts抽出（返答から） → 保存
+[SeedPanel (React)]
+    │ POST /api/seed { text }
+    ▼
+[backend: seed.ts]
+    └─→ extractFactsFromText()   ← LLMが自由記述から事実を抽出
+    └─→ mergeFactsToGraph("世界設定", facts)  ← 共有知識として保存
+
+[ConversationPanel (React)]
+    │ POST /api/conversation { npcName, playerMessage }
+    ▼
+[backend: conversation.ts]
+    ├─→ getNpcFacts(npcName)      ← NPC固有の事実
+    ├─→ getNpcFacts("世界設定")   ← 世界共有の事実（追加）
+    ├─→ generateFactsFromQuestion()  ← 質問から新規事実を先に確定
+    ├─→ mergeFactsToGraph(npcName, newFacts)
+    └─→ generateNpcReply()        ← 保存済みfactsのみで返答生成
+    ▼
+[Neo4j] ←→ [Ollama / OpenAI]
 ```
 
-**After（今回）:**
-```
-既存facts取得 → generateFactsFromQuestion（先にfact確定） → 保存 → NPC返答生成（grounded）
-```
+### モノレポ構成
 
-NPC が「自由に喋ってから facts を抽出」する構造から、「facts を先に確定してから NPC が喋る」構造に変更。
-
-### 主な変更ファイル
-
-| ファイル | 変更内容 |
-|---|---|
-| `apps/backend/src/services/llm.ts` | `generateFactsFromQuestion()` 追加、プロンプト改善、デバッグログ追加 |
-| `apps/backend/src/routes/conversation.ts` | Fact-first フローに変更、`extractFacts` 廃止 |
-| `packages/graph-db/src/npc-facts.ts` | certainty を取得し、0.8未満は文字列に `(certainty:X.X)` 付与 |
-| `packages/schema/src/fact.ts` | predicate を `z.string()` に戻す（enum 廃止） |
-| `apps/game-client/src/hooks/useConversation.ts` | `extractedFacts` → `newFacts` に変更 |
-| `apps/game-client/src/components/ConversationPanel.tsx` | 表示ラベルを「新たに判明したFact」に変更 |
+| パッケージ | 役割 | 主な変更 |
+|---|---|---|
+| `apps/backend` | Hono REST API | `/api/seed` 追加、会話フロー変更 |
+| `apps/game-client` | React + Vite フロントエンド | SeedPanel 追加、Zod バリデーション導入 |
+| `packages/graph-db` | Neo4j クライアント | certainty 取得、Zod バリデーション導入 |
+| `packages/schema` | Zod スキーマ（共有型） | predicate を `z.string()` に戻す |
 
 ---
 
-## 3. 苦労したこと・課題
+## 3. 技術選定の判断
 
-### LLM の predicate 非遵守問題
-プロンプトで predicate の enum を指定しても、ローカルモデル（qwen2.5:7b）が `is_part_of`・`is_name_of` など独自の形式を返し続けた。
+### `"世界設定"` という仮想 NPC でシードを管理
+グラフモデル（`NPC -[:BELIEVES]-> Fact`）を変えずに世界共有情報を表現するため、
+特別な NPC 名 `"世界設定"` の BELIEVES として保存する設計を選択。
+会話時に `getNpcFacts("世界設定")` を並列で取得して合成することで、
+全 NPC が世界設定を参照できる構造になっている。
 
-対策：
-- Zod `z.enum` → `z.string()` に戻し、パース自体を通す
-- `PREDICATE_MAP` で既知の非標準 predicate を正規化
-- 正規化できない場合は `related_to` にフォールバック（ログに記録）
-- `response_format: json_schema` with `strict: true` + enum で API レベルでも制約
+### API レスポンスの Zod バリデーション（フロントエンド）
+`res.json() as Promise<T>` による型アサーションを廃止し、
+`@repo/schema` の `ExtractedFactSchema` を `z.infer<>` で共有。
+バックエンドとフロントエンドが同一の Zod スキーマを使うことで、
+API 境界での型の保証を実現した。
 
-### プレースホルダー値の汚染
-`generateFactsFromQuestion` が `{"objectName": "不明", "certainty": 0.0}` を返し、グラフに保存されて NPC が「わかりません」と答え続ける悪循環が発生。
-
-対策：
-- `parseFacts()` で objectName に `PLACEHOLDER_PATTERN`（不明・？・未定等）が含まれる fact を破棄
-- `generateNpcReply()` でも既存 facts からプレースホルダーを除外
-- `generateFactsFromQuestion()` に渡す既存 facts もプレースホルダーを除外（ブロック防止）
-
-### 自己参照の質問に答えられない
-「あなたの名前は？」「住んでいる町は？」のような質問で `{"facts": []}` が返り、NPC が「わかりません」になる。
-
-原因：プロンプトが「職業・役割に関連する質問のみ生成可」と制約していたため、「住んでいる町」のような個人情報が対象外になっていた。
-
-対策：
-- 「NPC 自身に関する質問（名前・住居・出身・家族・日常など）は推測でも必ず生成」に拡張
-- few-shot 例を「名前」「場所」「酒場の名前」「住んでいる町」の 4 種に拡充
-
-### certainty が NPC 返答に反映されていなかった
-`getNpcFacts()` が `"subject predicate object"` 文字列を返すだけで certainty 情報が欠落していた。
-
-対策：
-- Cypher クエリに `b.certainty AS certainty` を追加（`-[b:BELIEVES]->` エイリアス付与）
-- certainty < 0.8 の場合に `(certainty:0.5)` を文字列に付与
-- `generateNpcReply()` のプロンプトに「確信度が低い場合は曖昧な表現を使う」指示を追加
-
-### Neo4j 構文エラー
-`-[:BELIEVES]->` でエイリアスなしに `b.certainty` を参照していたためエラー。`-[b:BELIEVES]->` で修正。
+### Neo4j レコードの Zod バリデーション
+`r.get(...) as string` による型アサーションを廃止し、
+`NpcFactRecordSchema.safeParse()` で検証。
+パース失敗レコードは `flatMap` で除外し、型安全性と堅牢性を両立。
 
 ---
 
 ## 4. 実装して良かったこと
 
-### デバッグログ（`llm-debug.log`）
-各フェーズ（REQUEST/RESPONSE）をファイルに追記する `logToFile()` を追加したことで、LLM が何を受け取り何を返したかが即座に確認できた。プロンプト改善のサイクルが大幅に短縮された。
+### Fact-first フロー
+NPC が喋ってから事実を抽出する構造から、事実を先に確定してから NPC が喋る構造へ変更。
+`llm-debug.log` で確認できるようになり、hallucination がグラフに入らなくなった。
 
-### プレースホルダーフィルタの一元化
-`PLACEHOLDER_PATTERN` を一箇所に定義し、入力（existingFacts）・出力（parseFacts）・NPC返答入力（generateNpcReply）の 3 箇所で同じパターンを使うことで、汚染ファクトが各ステージで確実に除去される構造にできた。
+### プレースホルダーフィルタの三重防衛
+`generateFactsFromQuestion` への入力・`parseFacts` の出力・`generateNpcReply` への入力
+の3箇所で `PLACEHOLDER_PATTERN` を適用。どのステージで `"不明"` が混入しても遮断できる。
 
-### 述語正規化マップ
-`PREDICATE_MAP` により、モデルが返す非標準 predicate（`is_part_of` → `part_of` 等）を吸収できる構造にした。`json_schema` 制約と二重のガードになっている。
+### `warning` フィールドによるソフトエラー
+シード登録で事実が0件の場合に HTTP 200 + `warning` フィールドを返す設計。
+フロントエンドはオレンジ色で警告を表示し、入力テキストをクリアしないため再入力しやすい。
+HTTP エラーと「抽出できなかった」を区別できる。
+
+### Zod スキーマの一元管理
+`@repo/schema` の `ExtractedFactSchema` をバックエンド・フロントエンド両方で使用。
+型定義の重複がなく、スキーマ変更時の修正が一箇所で済む。
 
 ---
 
-## 5. 今後やること（優先度付き）
+## 5. 苦労したこと・課題
+
+### LLM が few-shot 例なしでは単純な事実も抽出できない
+「酒場の娘の名前はリン」のような明確な文でも、プロンプトに例がないと `{"facts":[]}` を返すことがある。
+few-shot 例（名前・場所・伝聞の3パターン）を追加することで改善した。
+→ **教訓**: ローカルモデルは few-shot なしではルールだけでは動かない。具体例が必須。
+
+### LLM の predicate 非遵守（前回から継続）
+`json_schema` の `strict: true` + enum 制約を設定しても `is_part_of` 等を返すことがある。
+`PREDICATE_MAP` による正規化と `related_to` へのフォールバックで対処。
+→ `parseFacts - FALLBACK` ログで追跡可能。
+
+### プレースホルダー値 `"不明"` のグラフ汚染（前回から継続）
+モデルが `objectName: "不明"` を返しグラフに保存されてしまう問題。
+`parseFacts` での出力フィルタに加え、`generateNpcReply` への入力フィルタも追加して完全遮断。
+
+### certainty が NPC 返答に反映されていなかった
+Cypher クエリで `BELIEVES` リレーションに `b` エイリアスを付与し忘れたため Neo4j 構文エラー。
+`-[:BELIEVES]->` → `-[b:BELIEVES]->` に修正。
+
+### `as` 型アサーションの散在
+`res.json() as Promise<T>` や `r.get(...) as string` による型ごまかしが複数箇所に存在。
+Zod `parse` / `safeParse` に統一し、実行時に型が保証される設計に修正。
+
+---
+
+## 6. 今後やること（優先度付き）
 
 | 優先度 | 内容 |
 |---|---|
-| 高 | **会話履歴の表示**（現状は直前の返答のみ、ゲームとして成立しない） |
-| 高 | **複数NPC対応**（NPC選択 UI、現状は酒場の娘固定） |
-| 高 | **グラフ初期データ（シード）の仕組み**：ゲーム開始時に世界設定をあらかじめ DB に登録し、LLM の hallucination に頼らない骨格を作る |
-| 中 | **NPC 固有ペルソナ設定**（口調・知識範囲の個別定義） |
+| 高 | **会話履歴の表示**（現状は直前の返答のみ。ゲームとして成立しない） |
+| 高 | **複数NPC対応**（NPC選択UI。現状は酒場の娘固定） |
+| 中 | **NPC固有ペルソナ設定**（口調・知識範囲の個別定義） |
 | 中 | **グラフ可視化**（知識グラフをビジュアルで確認） |
-| 中 | **既存の汚染ファクト削除 UI または管理エンドポイント**（現状は手動で Neo4j を操作） |
+| 中 | **世界設定の一覧・削除UI**（登録済みシードを管理できるエンドポイント） |
 | 低 | 認証・セッション管理 |
 | 低 | デプロイ構成（Docker Compose 完全版） |
 
 ---
 
-## 6. 設計上の学び
+## 7. 設計上の学び（今回追加）
 
-### 「LLM に全て任せる」と品質が不安定
-ローカルモデルは指示への遵守度が低く、`objectName: "不明"` のような bad output が混入する。LLM の出力をそのままグラフに書くのではなく、**バリデーション・フィルタ・正規化を挟む防衛層**が必須。
+### API 境界は必ず Zod で検証する
+フロントエンドからバックエンドへのレスポンス、Neo4j からのレコード取得など、
+外部からのデータはすべて `safeParse` / `parse` を通す。
+`as T` は「そうである保証がない」ため、型安全性を損なう。
 
-### certainty は「知らない」と「推測」を分ける鍵
-`{"facts": []}` を返すのは「全く関与しえない話題のみ」とし、NPC が知りうることは低 certainty でも生成する設計にすることで、会話の自然さが改善した。certainty 値を NPC 返答プロンプトに渡すことで「たしか〜」「わかりません」の使い分けが可能になった。
+### ソフトエラーと HTTP エラーを分ける
+「処理は成功したが結果が空」と「サーバーエラー」は性質が異なる。
+前者は `warning` フィールドで表現し、後者は 4xx/5xx で返すことで
+クライアント側が適切にハンドリングできる。
 
-### プロンプトは few-shot 例が最も効く
-ルールの文章だけでは LLM が意図通りに動かないことが多い。「あなたの住んでいる町は？ → `located_in` の例」のように具体的な入出力ペアを追加するたびに精度が上がった。
+### few-shot 例はドキュメントではなく仕様
+LLM に対して「predicateはXを使え」と書いても守られないが、
+「この入力にはこの出力を返せ」という具体例は高い確率で遵守される。
+プロンプトエンジニアリングにおいて few-shot は必須の要素。

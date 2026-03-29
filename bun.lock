@@ -36,10 +36,12 @@
       "dependencies": {
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@babel/core": "^7.29.0",
         "@repo/eslint-config": "*",
+        "@repo/schema": "*",
         "@repo/typescript-config": "*",
         "@rolldown/plugin-babel": "^0.2.2",
         "@types/babel__core": "^7.20.5",
@@ -76,6 +78,7 @@
       "dependencies": {
         "neo4j-driver": "^6.0.1",
         "vitest": "^4.1.2",
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@repo/eslint-config": "*",

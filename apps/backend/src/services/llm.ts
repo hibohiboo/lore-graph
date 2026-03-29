@@ -198,6 +198,41 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   });
 };
 
+export const extractFactsFromText = async (text: string): Promise<ExtractedFact[]> => {
+  const messages = [
+    {
+      role: 'system' as const,
+      content: `以下のテキストから事実をJSONで抽出してください。
+断言されている情報は certainty:1.0、「らしい」「と聞いた」などの伝聞は certainty:0.5 程度にしてください。
+predicateは必ず以下のいずれかを使用してください：
+- is（状態・性質・名前）
+- located_in（空間的な所在）
+- related_to（関係・つながり）
+- part_of（構成要素・所属）
+- caused_by（因果）
+- seeks（意図・欲求）
+
+例）「酒場の娘の名前はリン」→ {"facts":[{"subjectName":"酒場の娘","predicate":"is","objectName":"リン","certainty":1.0}]}
+例）「銀嶺亭は街の中心にある」→ {"facts":[{"subjectName":"銀嶺亭","predicate":"located_in","objectName":"街の中心","certainty":1.0}]}
+例）「店主はドワーフらしい」→ {"facts":[{"subjectName":"店主","predicate":"is","objectName":"ドワーフ","certainty":0.5}]}
+
+事実がなければ {"facts": []} を返してください。`,
+    },
+    { role: 'user' as const, content: text },
+  ];
+  logToFile('extractFactsFromText - REQUEST', messages.map((m) => `[${m.role}] ${m.content}`).join('\n'));
+
+  const response = await client.chat.completions.create({
+    model,
+    response_format: FACTS_JSON_SCHEMA,
+    messages,
+  });
+
+  const raw = response.choices[0]?.message.content ?? '{"facts":[]}';
+  logToFile('extractFactsFromText - RESPONSE', raw);
+  return parseFacts(raw);
+};
+
 export const extractFacts = async (
   npcName: string,
   playerMessage: string,
