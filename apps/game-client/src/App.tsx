@@ -15,8 +15,19 @@ function App() {
       <SeedPanel />
       <hr />
       <FactListPanel />
+      <footer style={{ marginTop: '2rem', textAlign: 'center' }}>
+        <a
+          href="https://github.com/hibohiboo/lore-graph"
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: '0.75rem', color: '#888', textDecoration: 'none' }}
+        >
+          GitHub
+        </a>
+      </footer>
     </main>
   );
 }
 
 export default App;
+
