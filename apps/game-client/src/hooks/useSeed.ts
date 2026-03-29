@@ -1,14 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
 import { ExtractedFactSchema } from '@repo/schema';
+import { type FactRecord } from '@repo/graph-db';
 
 const SeedResponseSchema = z.object({
   facts: z.array(ExtractedFactSchema),
   warning: z.string().optional(),
 });
 
+const FactRecordSchema = z.object({
+  subject: z.string(),
+  predicate: z.string(),
+  object: z.string(),
+});
+
 const WorldFactsResponseSchema = z.object({
-  facts: z.array(z.string()),
+  facts: z.array(FactRecordSchema),
 });
 
 type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
@@ -16,7 +23,7 @@ type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
 export const useSeed = () => {
   const [text, setText] = useState('');
   const [registeredFacts, setRegisteredFacts] = useState<ExtractedFact[]>([]);
-  const [worldFacts, setWorldFacts] = useState<string[]>([]);
+  const [worldFacts, setWorldFacts] = useState<FactRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -73,19 +80,11 @@ export const useSeed = () => {
       });
   };
 
-  const deleteFact = (factStr: string) => {
-    // "subject predicate object" 形式をパース（" (certainty:X.X)" ラベルは除く）
-    const certIdx = factStr.indexOf(' (certainty:');
-    const clean = certIdx !== -1 ? factStr.slice(0, certIdx) : factStr;
-    const parts = clean.split(' ');
-    if (parts.length < 3) return;
-    const [subjectName, predicate, ...rest] = parts;
-    const objectName = rest.join(' ');
-
+  const deleteFact = (fact: FactRecord) => {
     fetch('/api/seed', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subjectName, predicate, objectName }),
+      body: JSON.stringify({ subjectName: fact.subject, predicate: fact.predicate, objectName: fact.object }),
     })
       .then((res) => {
         if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

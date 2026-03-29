@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { type Driver } from 'neo4j-driver';
-import { getNpcFacts, deleteNpcFact } from '@repo/graph-db';
+import { getFactsByNpc, deleteNpcFact } from '@repo/graph-db';
 import { extractFactsFromText } from '../services/llm.js';
 import { mergeFactsToGraph } from '../services/graph-writer.js';
 
@@ -37,7 +37,7 @@ export const createSeedRoute = (db: () => Driver) => {
   });
 
   app.get('/', async (c) => {
-    const facts = await getNpcFacts(db(), WORLD_NPC);
+    const facts = await getFactsByNpc(db(), WORLD_NPC);
     return c.json({ facts });
   });
 

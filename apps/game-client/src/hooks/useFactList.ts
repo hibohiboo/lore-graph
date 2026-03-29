@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
+import { type FactRecord } from '@repo/graph-db';
 
 const FactRecordSchema = z.object({
   subject: z.string(),
@@ -10,8 +11,6 @@ const FactRecordSchema = z.object({
 const FactListResponseSchema = z.object({
   facts: z.array(FactRecordSchema),
 });
-
-export type FactRecord = z.infer<typeof FactRecordSchema>;
 
 export const useFactList = () => {
   const [facts, setFacts] = useState<FactRecord[]>([]);
