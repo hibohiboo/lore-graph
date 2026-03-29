@@ -27,7 +27,13 @@ export const generateNpcReply = async (
       : validFacts.map((f) => `- ${f}`).join('\n');
 
   const personaText = persona
-    ? `職業・役割: ${persona.role}\n性格・口調: ${persona.personality}\n知識範囲: ${persona.knowledgeScope}\n`
+    ? [
+        persona.roles.length > 0 ? `職業・役割: ${persona.roles.join('、')}` : '',
+        persona.personalities.length > 0 ? `性格・口調: ${persona.personalities.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n') + '\n'
     : '';
 
   const npcMessages = [
@@ -67,10 +73,14 @@ export const generateFactsFromQuestion = async (
       : confirmedFacts.map((f) => `- ${f}`).join('\n');
 
   const personaSection = persona
-    ? `NPC「${npcName}」の職業・役割: ${persona.role}
-NPC「${npcName}」の性格: ${persona.personality}
-NPC「${npcName}」の知識範囲: ${persona.knowledgeScope}
-職業・役割に関連する質問には必ず事実を生成してください。`
+    ? [
+        persona.roles.length > 0 ? `NPC「${npcName}」の職業・役割: ${persona.roles.join('、')}` : '',
+        persona.personalities.length > 0 ? `NPC「${npcName}」の性格: ${persona.personalities.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `NPC「${npcName}」の知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+        '職業・役割に関連する質問には必ず事実を生成してください。',
+      ]
+        .filter(Boolean)
+        .join('\n')
     : `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
 また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
 例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。

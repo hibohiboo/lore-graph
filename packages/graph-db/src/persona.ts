@@ -1,21 +1,24 @@
 import { type Driver } from 'neo4j-driver';
 import { type NpcPersona, NpcPersonaSchema } from '@repo/schema';
 
+const toStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
 export const getPersona = async (driver: Driver, npcName: string): Promise<NpcPersona | undefined> => {
   const session = driver.session();
   try {
     const result = await session.run(
       `MATCH (p:Persona {name: $npcName})
-       RETURN p.name AS name, p.role AS role, p.personality AS personality, p.knowledgeScope AS knowledgeScope`,
+       RETURN p.name AS name, p.roles AS roles, p.personalities AS personalities, p.knowledgeScopes AS knowledgeScopes`,
       { npcName },
     );
     const record = result.records[0];
     if (!record) return undefined;
     const parsed = NpcPersonaSchema.safeParse({
       name: record.get('name'),
-      role: record.get('role'),
-      personality: record.get('personality'),
-      knowledgeScope: record.get('knowledgeScope'),
+      roles: toStringArray(record.get('roles')),
+      personalities: toStringArray(record.get('personalities')),
+      knowledgeScopes: toStringArray(record.get('knowledgeScopes')),
     });
     return parsed.success ? parsed.data : undefined;
   } finally {
@@ -28,15 +31,15 @@ export const getAllPersonas = async (driver: Driver): Promise<NpcPersona[]> => {
   try {
     const result = await session.run(
       `MATCH (p:Persona)
-       RETURN p.name AS name, p.role AS role, p.personality AS personality, p.knowledgeScope AS knowledgeScope
+       RETURN p.name AS name, p.roles AS roles, p.personalities AS personalities, p.knowledgeScopes AS knowledgeScopes
        ORDER BY p.name`,
     );
     return result.records.flatMap((r) => {
       const parsed = NpcPersonaSchema.safeParse({
         name: r.get('name'),
-        role: r.get('role'),
-        personality: r.get('personality'),
-        knowledgeScope: r.get('knowledgeScope'),
+        roles: toStringArray(r.get('roles')),
+        personalities: toStringArray(r.get('personalities')),
+        knowledgeScopes: toStringArray(r.get('knowledgeScopes')),
       });
       return parsed.success ? [parsed.data] : [];
     });
@@ -51,7 +54,7 @@ export const upsertPersona = async (driver: Driver, persona: NpcPersona): Promis
     await session.executeWrite((tx) =>
       tx.run(
         `MERGE (p:Persona {name: $name})
-         SET p.role = $role, p.personality = $personality, p.knowledgeScope = $knowledgeScope`,
+         SET p.roles = $roles, p.personalities = $personalities, p.knowledgeScopes = $knowledgeScopes`,
         persona,
       ),
     );

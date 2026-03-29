@@ -22,9 +22,9 @@ export type FactRecord = z.infer<typeof FactRecordSchema>;
 
 export const NpcPersonaSchema = z.object({
   name: z.string(),
-  role: z.string(),
-  personality: z.string(),
-  knowledgeScope: z.string(),
+  roles: z.array(z.string()),
+  personalities: z.array(z.string()),
+  knowledgeScopes: z.array(z.string()),
 });
 
 export type NpcPersona = z.infer<typeof NpcPersonaSchema>;
