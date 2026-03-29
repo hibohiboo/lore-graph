@@ -1,37 +1,31 @@
 import { useState } from 'react';
 import { usePersonaList } from '../hooks/usePersonaList';
-import { type NpcPersona } from '@repo/schema';
 
-const emptyForm = (): NpcPersona => ({ name: '', role: '', personality: '', knowledgeScope: '' });
+const NPC_NAME = '酒場の娘';
+const emptyForm = () => ({ role: '', personality: '', knowledgeScope: '' });
 
 export const PersonaPanel = () => {
   const { personas, error, upsertPersona, deletePersona } = usePersonaList();
-  const [form, setForm] = useState<NpcPersona>(emptyForm());
+  const [form, setForm] = useState(emptyForm());
 
-  const handleChange = (key: keyof NpcPersona, value: string) => {
+  const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = () => {
-    if (!form.name.trim()) return;
-    upsertPersona(form);
+    upsertPersona({ name: NPC_NAME, ...form });
     setForm(emptyForm());
   };
 
-  const handleEdit = (persona: NpcPersona) => {
-    setForm({ ...persona });
+  const handleEdit = (persona: { role: string; personality: string; knowledgeScope: string }) => {
+    setForm({ role: persona.role, personality: persona.personality, knowledgeScope: persona.knowledgeScope });
   };
 
   return (
     <section>
-      <h2>NPCペルソナ管理</h2>
+      <h2>NPCペルソナ管理（{NPC_NAME}）</h2>
       {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
       <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <input
-          placeholder="NPC名"
-          value={form.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-        />
         <input
           placeholder="職業・役割"
           value={form.role}
@@ -47,7 +41,7 @@ export const PersonaPanel = () => {
           value={form.knowledgeScope}
           onChange={(e) => handleChange('knowledgeScope', e.target.value)}
         />
-        <button onClick={handleSubmit} disabled={!form.name.trim()}>
+        <button onClick={handleSubmit}>
           登録 / 更新
         </button>
       </div>
