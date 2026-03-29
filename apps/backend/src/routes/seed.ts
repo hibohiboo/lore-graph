@@ -23,9 +23,10 @@ export const createSeedRoute = (db: () => Driver) => {
     const facts = await extractFactsFromText(text);
     if (facts.length > 0) {
       await mergeFactsToGraph(db(), WORLD_NPC, facts);
+      return c.json({ facts });
     }
 
-    return c.json({ facts });
+    return c.json({ facts: [], warning: '事実を抽出できませんでした。別の表現で試してください。' });
   });
 
   return app;

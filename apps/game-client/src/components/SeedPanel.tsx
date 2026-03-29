@@ -1,7 +1,7 @@
 import { useSeed } from '../hooks/useSeed';
 
 export const SeedPanel = () => {
-  const { text, setText, registeredFacts, loading, error, submit } = useSeed();
+  const { text, setText, registeredFacts, loading, error, warning, submit } = useSeed();
 
   return (
     <section>
@@ -17,6 +17,7 @@ export const SeedPanel = () => {
         {loading ? '登録中...' : '登録'}
       </button>
       {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
+      {warning && <p style={{ color: 'orange' }}>⚠ {warning}</p>}
       {registeredFacts.length > 0 ? (
         <details open>
           <summary>登録されたFact ({registeredFacts.length}件)</summary>

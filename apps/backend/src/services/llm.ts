@@ -211,6 +211,11 @@ predicateは必ず以下のいずれかを使用してください：
 - part_of（構成要素・所属）
 - caused_by（因果）
 - seeks（意図・欲求）
+
+例）「酒場の娘の名前はリン」→ {"facts":[{"subjectName":"酒場の娘","predicate":"is","objectName":"リン","certainty":1.0}]}
+例）「銀嶺亭は街の中心にある」→ {"facts":[{"subjectName":"銀嶺亭","predicate":"located_in","objectName":"街の中心","certainty":1.0}]}
+例）「店主はドワーフらしい」→ {"facts":[{"subjectName":"店主","predicate":"is","objectName":"ドワーフ","certainty":0.5}]}
+
 事実がなければ {"facts": []} を返してください。`,
     },
     { role: 'user' as const, content: text },

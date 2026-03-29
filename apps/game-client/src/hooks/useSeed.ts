@@ -4,6 +4,7 @@ import { ExtractedFactSchema } from '@repo/schema';
 
 const SeedResponseSchema = z.object({
   facts: z.array(ExtractedFactSchema),
+  warning: z.string().optional(),
 });
 
 type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
@@ -13,11 +14,13 @@ export const useSeed = () => {
   const [registeredFacts, setRegisteredFacts] = useState<ExtractedFact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const submit = async () => {
     if (!text.trim()) return;
     setLoading(true);
     setError(null);
+    setWarning(null);
 
     fetch('/api/seed', {
       method: 'POST',
@@ -31,7 +34,8 @@ export const useSeed = () => {
       .then((data) => {
         const parsed = SeedResponseSchema.parse(data);
         setRegisteredFacts(parsed.facts);
-        setText('');
+        if (parsed.warning) setWarning(parsed.warning);
+        else setText('');
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -41,5 +45,5 @@ export const useSeed = () => {
       });
   };
 
-  return { text, setText, registeredFacts, loading, error, submit };
+  return { text, setText, registeredFacts, loading, error, warning, submit };
 };
