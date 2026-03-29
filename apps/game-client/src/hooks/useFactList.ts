@@ -1,12 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { FactRecordSchema, type FactRecord } from '@repo/schema';
 import { z } from 'zod';
-import { type FactRecord } from '@repo/graph-db';
 
-const FactRecordSchema = z.object({
-  subject: z.string(),
-  predicate: z.string(),
-  object: z.string(),
-});
+export type { FactRecord };
 
 const FactListResponseSchema = z.object({
   facts: z.array(FactRecordSchema),

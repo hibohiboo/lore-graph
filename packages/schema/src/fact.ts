@@ -11,3 +11,11 @@ export const ExtractedFactSchema = z.object({
 });
 
 export type ExtractedFact = z.infer<typeof ExtractedFactSchema>;
+
+export const FactRecordSchema = z.object({
+  subject: z.string(),
+  predicate: z.string(),
+  object: z.string(),
+});
+
+export type FactRecord = z.infer<typeof FactRecordSchema>;

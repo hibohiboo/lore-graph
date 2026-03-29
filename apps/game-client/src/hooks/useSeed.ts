@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { z } from 'zod';
-import { ExtractedFactSchema } from '@repo/schema';
-import { type FactRecord } from '@repo/graph-db';
+import { ExtractedFactSchema, FactRecordSchema, type FactRecord } from '@repo/schema';
 
 const SeedResponseSchema = z.object({
   facts: z.array(ExtractedFactSchema),
   warning: z.string().optional(),
-});
-
-const FactRecordSchema = z.object({
-  subject: z.string(),
-  predicate: z.string(),
-  object: z.string(),
 });
 
 const WorldFactsResponseSchema = z.object({

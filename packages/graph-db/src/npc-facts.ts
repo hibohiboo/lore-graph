@@ -1,13 +1,8 @@
 import { type Driver } from 'neo4j-driver';
 import { z } from 'zod';
+import { FactRecordSchema, type FactRecord } from '@repo/schema';
 
-const FactRecordSchema = z.object({
-  subject: z.string(),
-  predicate: z.string(),
-  object: z.string(),
-});
-
-export type FactRecord = z.infer<typeof FactRecordSchema>;
+export type { FactRecord };
 
 export const getAllFacts = async (driver: Driver): Promise<FactRecord[]> => {
   const session = driver.session();
