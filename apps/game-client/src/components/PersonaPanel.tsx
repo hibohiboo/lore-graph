@@ -24,6 +24,7 @@ const CategorySection = ({
   onRemove: (i: number) => void;
 }) => {
   const [input, setInput] = useState('');
+  const inputId = `persona-input-${label}`;
   const handleAdd = () => {
     const v = input.trim();
     if (!v) return;
@@ -31,25 +32,36 @@ const CategorySection = ({
     setInput('');
   };
   return (
-    <div style={{ marginBottom: '0.75rem' }}>
-      <strong>{label}</strong>
-      <ul style={{ margin: '0.25rem 0', paddingLeft: '1rem' }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>{item}</span>
-            <button onClick={() => onRemove(i)} style={{ fontSize: '0.75rem' }}>削除</button>
-          </li>
-        ))}
-      </ul>
-      <div style={{ display: 'flex', gap: '0.25rem' }}>
+    <div className="category-section">
+      <h3>{label}</h3>
+      {items.length > 0 ? (
+        <ul className="tag-chip-list">
+          {items.map((item, i) => (
+            <li key={i} className="tag-chip">
+              <span>{item}</span>
+              <button
+                type="button"
+                className="tag-chip-remove"
+                onClick={() => onRemove(i)}
+                aria-label={`${label}「${item}」を削除`}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="category-add-row">
+        <label htmlFor={inputId} className="sr-only">{label}を入力</label>
         <input
+          id={inputId}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder={`${label}を入力`}
-          style={{ flex: 1 }}
+          placeholder={`${label}を入力…`}
+          autoComplete="off"
         />
-        <button onClick={handleAdd} disabled={!input.trim()}>追加</button>
+        <button type="button" onClick={handleAdd} disabled={!input.trim()}>追加</button>
       </div>
     </div>
   );
@@ -72,10 +84,15 @@ export const PersonaPanel = () => {
     upsertPersona({ ...current, [category]: current[category].filter((_, i) => i !== index) });
   };
 
+  const handleDeleteAll = () => {
+    if (!window.confirm(`「${NPC_NAME}」のペルソナをすべて削除しますか？`)) return;
+    deletePersona(NPC_NAME);
+  };
+
   return (
     <section>
-      <h2>NPCペルソナ管理（{NPC_NAME}）</h2>
-      {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
+      <h2>NPCペルソナ（{NPC_NAME}）</h2>
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
       {(Object.keys(LABELS) as Category[]).map((cat) => (
         <CategorySection
           key={cat}
@@ -86,7 +103,7 @@ export const PersonaPanel = () => {
         />
       ))}
       {personas.some((p) => p.name === NPC_NAME) ? (
-        <button onClick={() => deletePersona(NPC_NAME)} style={{ fontSize: '0.75rem', color: 'red' }}>
+        <button type="button" className="btn-danger" onClick={handleDeleteAll}>
           ペルソナをすべて削除
         </button>
       ) : null}

@@ -7,26 +7,30 @@ export const SeedPanel = () => {
   return (
     <section>
       <h2>世界設定の登録</h2>
+      <label className="sr-only" htmlFor="seed-text">世界設定テキスト</label>
       <textarea
+        id="seed-text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="例）酒場の名前は銀嶺亭です。オーナーは田中さんです。"
+        placeholder="例）酒場の名前は銀嶺亭です。オーナーは田中さんです。…"
         rows={4}
-        style={{ width: '100%' }}
+        aria-label="世界設定テキストを入力"
       />
-      <button onClick={submit} disabled={loading || !text.trim()}>
-        {loading ? '登録中...' : '登録'}
+      <button type="button" className="btn-send" onClick={submit} disabled={loading || !text.trim()}>
+        {loading ? '登録中…' : '登録'}
       </button>
-      {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
-      {warning && <p style={{ color: 'orange' }}>⚠ {warning}</p>}
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
+      {warning ? <p className="inline-warn" role="status">⚠ {warning}</p> : null}
       {registeredFacts.length > 0 ? (
         <details open>
           <summary>今回登録されたFact ({registeredFacts.length}件)</summary>
-          <ul>
+          <ul className="fact-pill-list">
             {registeredFacts.map((f, i) => (
-              <li key={i}>
-                {f.subjectName} — {f.predicate} — {f.objectName}
-                <small> (確信度: {f.certainty})</small>
+              <li key={i} className="fact-pill">
+                <span className="fact-pill-subject">{f.subjectName}</span>
+                <span className="fact-pill-predicate">—{f.predicate}—</span>
+                <span className="fact-pill-object">{f.objectName}</span>
+                <span className="fact-pill-certainty">{Math.round(f.certainty * 100)}%</span>
               </li>
             ))}
           </ul>
@@ -35,12 +39,12 @@ export const SeedPanel = () => {
       {worldFacts.length > 0 ? (
         <details open>
           <summary>登録済み世界設定 ({worldFacts.length}件)</summary>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left' }}>subject</th>
-                <th style={{ textAlign: 'left' }}>predicate</th>
-                <th style={{ textAlign: 'left' }}>object</th>
+                <th>subject</th>
+                <th>predicate</th>
+                <th>object</th>
                 <th />
               </tr>
             </thead>
@@ -51,7 +55,12 @@ export const SeedPanel = () => {
                   <td>{f.predicate}</td>
                   <td>{f.object}</td>
                   <td>
-                    <button onClick={() => deleteFact(f)} style={{ fontSize: '0.75rem' }}>
+                    <button
+                      type="button"
+                      className="btn-sm btn-danger"
+                      onClick={() => deleteFact(f)}
+                      aria-label={`「${f.subject} ${f.predicate} ${f.object}」を削除`}
+                    >
                       削除
                     </button>
                   </td>

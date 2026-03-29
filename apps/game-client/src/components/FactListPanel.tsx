@@ -6,16 +6,16 @@ export const FactListPanel = () => {
   return (
     <section>
       <h2>Fact 一覧</h2>
-      {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
       {facts.length === 0 ? (
         <p>登録されたFactはありません。</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left' }}>subject</th>
-              <th style={{ textAlign: 'left' }}>predicate</th>
-              <th style={{ textAlign: 'left' }}>object</th>
+              <th>subject</th>
+              <th>predicate</th>
+              <th>object</th>
               <th />
             </tr>
           </thead>
@@ -26,7 +26,14 @@ export const FactListPanel = () => {
                 <td>{f.predicate}</td>
                 <td>{f.object}</td>
                 <td>
-                  <button onClick={() => deleteFact(f)}>削除</button>
+                  <button
+                    type="button"
+                    className="btn-sm btn-danger"
+                    onClick={() => deleteFact(f)}
+                    aria-label={`「${f.subject} ${f.predicate} ${f.object}」を削除`}
+                  >
+                    削除
+                  </button>
                 </td>
               </tr>
             ))}

@@ -1,5 +1,13 @@
 import { useConversation } from '../hooks/useConversation';
 
+const LoadingDots = () => (
+  <span className="loading-dots" aria-label="考え中">
+    <span className="loading-dot" />
+    <span className="loading-dot" />
+    <span className="loading-dot" />
+  </span>
+);
+
 type Props = {
   npcName: string;
 };
@@ -11,31 +19,38 @@ export const ConversationPanel = ({ npcName }: Props) => {
   return (
     <section>
       <h2>{npcName} と話す</h2>
+      <label className="speaker-label" htmlFor="player-message">あなた：</label>
       <textarea
+        id="player-message"
         value={playerMessage}
         onChange={(e) => setPlayerMessage(e.target.value)}
-        placeholder="メッセージを入力..."
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
+        }}
+        placeholder="メッセージを入力… (Ctrl+Enter で送信)"
         rows={3}
-        style={{ width: '100%' }}
+        aria-label={`${npcName}へのメッセージ`}
       />
-      <button onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
-        {loading ? '考え中...' : '送信'}
+      <button type="button" className="btn-send" onClick={sendMessage} disabled={loading || !playerMessage.trim()}>
+        {loading ? <LoadingDots /> : '送信'}
       </button>
-      {error && <p style={{ color: 'red' }}>エラー: {error}</p>}
-      {npcReply && (
-        <div>
-          <h3>返答:</h3>
+      {error ? <p className="inline-error" role="alert">エラー: {error}</p> : null}
+      {npcReply ? (
+        <div className="npc-reply" aria-live="polite">
+          <p className="npc-name-badge">{npcName}</p>
           <blockquote>{npcReply}</blockquote>
         </div>
-      )}
+      ) : null}
       {newFacts.length > 0 ? (
         <details>
-          <summary>新たに判明したFact ({newFacts.length}件)</summary>
-          <ul>
+          <summary>新たに判明したこと ({newFacts.length}件)</summary>
+          <ul className="fact-pill-list">
             {newFacts.map((f, i) => (
-              <li key={i}>
-                {f.subjectName} — {f.predicate} — {f.objectName}
-                <small> (確信度: {f.certainty})</small>
+              <li key={i} className="fact-pill">
+                <span className="fact-pill-subject">{f.subjectName}</span>
+                <span className="fact-pill-predicate">—{f.predicate}—</span>
+                <span className="fact-pill-object">{f.objectName}</span>
+                <span className="fact-pill-certainty">{Math.round(f.certainty * 100)}%</span>
               </li>
             ))}
           </ul>

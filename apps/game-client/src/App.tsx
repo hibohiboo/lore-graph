@@ -6,15 +6,35 @@ import { PersonaPanel } from './components/PersonaPanel';
 
 function App() {
   return (
-    <main>
+    <main id="main">
+      <a href="#main" className="skip-link">メインコンテンツへスキップ</a>
       <h1>Lore Graph</h1>
-      <PersonaPanel />
-      <hr />
-      <SeedPanel />
-      <hr />
-      <FactListPanel />
-      <hr />
+      <p className="app-title-sub">— 酒場の娘に話しかけてみよう —</p>
+
       <ConversationPanel npcName="酒場の娘" />
+
+      <hr />
+
+      <details>
+        <summary style={{ color: 'var(--text-muted)', fontSize: '0.8rem', letterSpacing: '0.06em' }}>
+          マスター設定
+        </summary>
+        <div className="admin-section" style={{ marginTop: '0.75rem' }}>
+          <PersonaPanel />
+          <SeedPanel />
+          <FactListPanel />
+        </div>
+      </details>
+
+      <footer>
+        <a
+          href="https://github.com/hibohiboo/lore-graph"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
+      </footer>
     </main>
   );
 }

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { type Driver } from 'neo4j-driver';
 import { getNpcFacts, getPersona } from '@repo/graph-db';
-import { generateNpcReply, generateFactsFromQuestion } from '../services/llm.js';
+import { generateNpcReply, generateFactsFromQuestion, extractFactsFromText } from '../services/llm.js';
 import { mergeFactsToGraph } from '../services/graph-writer.js';
 
 const ConversationRequestSchema = z.object({
@@ -33,7 +33,12 @@ export const createConversationRoute = (db: () => Driver) => {
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
     const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona);
 
-    return c.json({ npcReply, newFacts });
+    const replyFacts = await extractFactsFromText(npcReply, playerMessage);
+    if (replyFacts.length > 0) {
+      await mergeFactsToGraph(db(), npcName, replyFacts);
+    }
+
+    return c.json({ npcReply, newFacts: [...newFacts, ...replyFacts] });
   });
 
   return app;

@@ -223,11 +223,13 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   });
 };
 
-export const extractFactsFromText = async (text: string): Promise<ExtractedFact[]> => {
+export const extractFactsFromText = async (text: string, playerMessage?: string): Promise<ExtractedFact[]> => {
+  const contextLine = playerMessage ? `プレイヤーの質問: ${playerMessage}\nNPCの返答: ${text}` : text;
   const messages = [
     {
       role: 'system' as const,
       content: `以下のテキストから事実をJSONで抽出してください。
+プレイヤーの質問が付いている場合は、質問の文脈を踏まえて返答から事実を読み取ってください。
 断言されている情報は certainty:1.0、「らしい」「と聞いた」などの伝聞は certainty:0.5 程度にしてください。
 predicateは必ず以下のいずれかを使用してください：
 - is（状態・性質・名前）
@@ -243,7 +245,7 @@ predicateは必ず以下のいずれかを使用してください：
 
 事実がなければ {"facts": []} を返してください。`,
     },
-    { role: 'user' as const, content: text },
+    { role: 'user' as const, content: contextLine },
   ];
   logToFile('extractFactsFromText - REQUEST', messages.map((m) => `[${m.role}] ${m.content}`).join('\n'));
 
