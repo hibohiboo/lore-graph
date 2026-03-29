@@ -508,6 +508,86 @@ li {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Discovery sections (facts + persona) ── */
+
+.discovery-section {
+  margin-top: 0.6rem;
+}
+
+.discovery-section + .discovery-section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.discovery-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.35rem;
+}
+
+.discovery-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 2px;
+  font-size: 0.62rem;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.discovery-tag--fact {
+  background: rgba(110, 62, 10, 0.4);
+  border: 1px solid var(--border-lit);
+  color: var(--accent-text);
+}
+
+.discovery-tag--persona {
+  background: rgba(10, 60, 90, 0.4);
+  border: 1px solid #2a5878;
+  color: #80c8e8;
+}
+
+/* ── Persona hint list ── */
+
+.persona-hint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.persona-hint-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  background: rgba(10, 40, 60, 0.5);
+  border: 1px solid #1e3d52;
+  border-radius: 2px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.persona-hint-category {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a9ab8;
+  white-space: nowrap;
+}
+
+.persona-hint-value {
+  color: var(--text);
+}
+
 /* ── Error / Warning inline ── */
 
 .inline-error {
@@ -617,6 +697,38 @@ li {
 
 .skip-link:focus-visible {
   top: 0;
+}
+
+/* ── NPC Selector ── */
+
+.npc-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.npc-selector__label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.npc-selector__select {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border-lit);
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.npc-selector__select:focus {
+  outline: 2px solid var(--border-lit);
+  outline-offset: 2px;
 }
 
 /* ── Footer ── */

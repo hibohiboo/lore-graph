@@ -1,7 +1,15 @@
 import { appendFileSync } from 'node:fs';
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { ExtractedFactSchema, type ExtractedFact, type NpcPersona, type ConversationMessage } from '@repo/schema';
+import {
+  ExtractedFactSchema,
+  PersonaHintsSchema,
+  type ExtractedFact,
+  type NpcPersona,
+  type PersonaHints,
+  type ConversationMessage,
+} from '@repo/schema';
+import { type NpcDefinition } from '@repo/npc-mind';
 
 const logToFile = (label: string, content: string) => {
   const entry = `=== [${new Date().toISOString()}] ${label} ===\n${content}\n\n`;
@@ -22,6 +30,7 @@ export const generateNpcReply = async (
   playerMessage: string,
   persona?: NpcPersona,
   history?: ConversationMessage[],
+  npcDef?: NpcDefinition,
 ): Promise<string> => {
   const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
   const factsText =
@@ -29,15 +38,24 @@ export const generateNpcReply = async (
       ? '（まだ何も知らない）'
       : validFacts.map((f) => `- ${f}`).join('\n');
 
-  const personaText = persona
+  const defLines = npcDef
     ? [
-        persona.roles.length > 0 ? `職業・役割: ${persona.roles.join('、')}` : '',
-        persona.personalities.length > 0 ? `性格・口調: ${persona.personalities.join('、')}` : '',
-        persona.knowledgeScopes.length > 0 ? `知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+        `職業・役割: ${npcDef.role}`,
+        `性格・口調: ${npcDef.personality}`,
+        `知識範囲: ${npcDef.knowledgeScope}`,
       ]
-        .filter(Boolean)
-        .join('\n') + '\n'
-    : '';
+    : [];
+
+  const dynamicLines = persona
+    ? [
+        persona.roles.length > 0 ? `追加された役割: ${persona.roles.join('、')}` : '',
+        persona.personalities.length > 0 ? `追加された口調: ${persona.personalities.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `追加された知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ].filter(Boolean)
+    : [];
+
+  const personaText = [...defLines, ...dynamicLines].join('\n');
+  const personaSection = personaText ? personaText + '\n' : '';
 
   const historyMessages = history
     ? history.slice(-HISTORY_LIMIT * 2).map((m) => ({
@@ -49,7 +67,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。\n${personaText}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
     },
     ...historyMessages,
     { role: 'user' as const, content: playerMessage },
@@ -77,25 +95,35 @@ export const generateFactsFromQuestion = async (
   playerMessage: string,
   existingFacts: string[],
   persona?: NpcPersona,
+  npcDef?: NpcDefinition,
 ): Promise<ExtractedFact[]> => {
-  const confirmedFacts = existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
+  const confirmedFacts = existingFacts.filter(
+    (f) => !PLACEHOLDER_PATTERN.test(f),
+  );
   const existingText =
     confirmedFacts.length === 0
       ? '（まだ何も知らない）'
       : confirmedFacts.map((f) => `- ${f}`).join('\n');
 
-  const personaSection = persona
+  const defLines = npcDef
     ? [
-        persona.roles.length > 0 ? `NPC「${npcName}」の職業・役割: ${persona.roles.join('、')}` : '',
-        persona.knowledgeScopes.length > 0 ? `NPC「${npcName}」の知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
-        '職業・役割に関連する質問には必ず事実を生成してください。',
+        `NPC「${npcName}」の職業・役割: ${npcDef.role}`,
+        `NPC「${npcName}」の知識範囲: ${npcDef.knowledgeScope}`,
       ]
-        .filter(Boolean)
-        .join('\n')
-    : `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。
-また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。
-例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。
-職業・役割に関連する質問には必ず事実を生成してください。`;
+    : [
+        `NPC「${npcName}」は自分自身の名前・役割・勤め先などの基本情報を常に知っています。`,
+        `また、NPC「${npcName}」は自分の職業・役割に関連することであれば全て知っています。`,
+        `例えば酒場の娘なら、料理・酒・常連客・店のルール・おすすめ品なども知っています。`,
+      ];
+
+  const dynamicLines = persona
+    ? [
+        persona.roles.length > 0 ? `追加された役割: ${persona.roles.join('、')}` : '',
+        persona.knowledgeScopes.length > 0 ? `追加された知識範囲: ${persona.knowledgeScopes.join('、')}` : '',
+      ].filter(Boolean)
+    : [];
+
+  const personaSection = [...defLines, ...dynamicLines, '職業・役割に関連する質問には必ず事実を生成してください。'].join('\n');
 
   const messages = [
     {
@@ -158,7 +186,14 @@ ${existingText}
 
 const ExtractedFactsSchema = z.object({ facts: z.array(ExtractedFactSchema) });
 
-const VALID_PREDICATES = ['is', 'located_in', 'related_to', 'part_of', 'caused_by', 'seeks'] as const;
+const VALID_PREDICATES = [
+  'is',
+  'located_in',
+  'related_to',
+  'part_of',
+  'caused_by',
+  'seeks',
+] as const;
 type ValidPredicate = (typeof VALID_PREDICATES)[number];
 
 const PREDICATE_MAP: Record<string, ValidPredicate> = {
@@ -186,7 +221,10 @@ const normalizePredicate = (predicate: string): ValidPredicate => {
   }
   const mapped = PREDICATE_MAP[predicate];
   if (mapped) return mapped;
-  logToFile('parseFacts - FALLBACK', `unknown predicate "${predicate}" → related_to`);
+  logToFile(
+    'parseFacts - FALLBACK',
+    `unknown predicate "${predicate}" → related_to`,
+  );
   return 'related_to';
 };
 
@@ -227,15 +265,126 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   }
   return parsed.data.facts.flatMap((f) => {
     if (PLACEHOLDER_PATTERN.test(f.objectName)) {
-      logToFile('parseFacts - SKIP', `placeholder objectName: "${f.objectName}"`);
+      logToFile(
+        'parseFacts - SKIP',
+        `placeholder objectName: "${f.objectName}"`,
+      );
       return [];
     }
     return [{ ...f, predicate: normalizePredicate(f.predicate) }];
   });
 };
 
-export const extractFactsFromText = async (text: string, playerMessage?: string): Promise<ExtractedFact[]> => {
-  const contextLine = playerMessage ? `プレイヤーの質問: ${playerMessage}\nNPCの返答: ${text}` : text;
+const PERSONA_HINTS_JSON_SCHEMA = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'persona_hints',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        personalities: { type: 'array', items: { type: 'string' } },
+        roles: { type: 'array', items: { type: 'string' } },
+        knowledgeScopes: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['personalities', 'roles', 'knowledgeScopes'],
+      additionalProperties: false,
+    },
+  },
+} as const;
+
+export const extractPersonaHintsFromReply = async (
+  npcName: string,
+  reply: string,
+  existingPersona?: NpcPersona,
+): Promise<PersonaHints> => {
+  const empty: PersonaHints = {
+    personalities: [],
+    roles: [],
+    knowledgeScopes: [],
+  };
+
+  const existingText = existingPersona
+    ? [
+        existingPersona.roles.length > 0
+          ? `職業・役割（登録済み）: ${existingPersona.roles.join('、')}`
+          : '',
+        existingPersona.personalities.length > 0
+          ? `性格・口調（登録済み）: ${existingPersona.personalities.join('、')}`
+          : '',
+        existingPersona.knowledgeScopes.length > 0
+          ? `知識範囲（登録済み）: ${existingPersona.knowledgeScopes.join('、')}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : '（未登録）';
+
+  const messages = [
+    {
+      role: 'system' as const,
+      content: `NPCの返答からペルソナ情報を抽出します。
+
+【対象NPC】${npcName}
+【登録済み情報】
+${existingText}
+
+【手順】
+1. 返答の中で使われている一人称（俺・僕・私・あたし・うち など）を探す
+   → 登録済みに「一人称は「X」」が既にある → 追加しない（空配列）
+   → 登録済みにない一人称 → personalities に「一人称は「X」」を追加（XはNPCが使った実際の言葉）
+2. 登録済みにない語尾・口調の特徴があれば personalities に追加
+3. 職業・役割の新情報があれば roles に追加
+4. 知識範囲の新情報があれば knowledgeScopes に追加
+
+【重要ルール】
+- 値は必ず返答の中に実際に存在する言葉を使う。「?」「？」「X」などのプレースホルダーは絶対に使わない
+- 確信が持てない場合は追加しない（誤情報より空のほうがよい）
+- 登録済み情報と重複する場合は追加しない
+
+【抽出例】
+例1: 登録済みに「一人称は「私」」がある。返答「私、リンだぜ。」→ 「私」は登録済み → 追加なし → {"personalities":[],"roles":[],"knowledgeScopes":[]}
+例2: 登録済みに一人称なし。返答「俺の名前はリンだぜ。」→ 「俺」は新しい一人称 → {"personalities":["一人称は「俺」"],"roles":[],"knowledgeScopes":[]}
+例3: 登録済みに一人称なし。返答「うちの料理はおいしいって有名だよ。」→ 「うち」は新しい一人称。料理が得意。 → [{"personalities":["一人称は「うち」"],"roles":[],"knowledgeScopes":[]},{"personalities":["料理が得意"],"roles":[],"knowledgeScopes":[]}]
+例4: 返答「黒潮ビーフカレーが名物だぜ。」→ 一人称なし、新情報なし → {"personalities":[],"roles":[],"knowledgeScopes":[]}`,
+    },
+    {
+      role: 'user' as const,
+      content: `NPCの返答:\n${reply}`,
+    },
+  ];
+  logToFile(
+    'extractPersonaHintsFromReply - REQUEST',
+    messages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
+  );
+
+  const response = await client.chat.completions.create({
+    model,
+    response_format: PERSONA_HINTS_JSON_SCHEMA,
+    messages,
+    max_tokens: 256,
+  });
+
+  const raw =
+    response.choices[0]?.message.content ??
+    '{"personalities":[],"roles":[],"knowledgeScopes":[]}';
+  logToFile('extractPersonaHintsFromReply - RESPONSE', raw);
+
+  const parsed = PersonaHintsSchema.safeParse(JSON.parse(raw));
+  if (!parsed.success) {
+    logToFile('extractPersonaHintsFromReply - ERROR', parsed.error.message);
+    return empty;
+  }
+  return parsed.data;
+};
+
+export const extractFactsFromText = async (
+  text: string,
+  playerMessage?: string,
+): Promise<ExtractedFact[]> => {
+  const contextLine = playerMessage
+    ? `プレイヤーの質問: ${playerMessage}\nNPCの返答: ${text}`
+    : text;
   const messages = [
     {
       role: 'system' as const,
@@ -258,7 +407,10 @@ predicateは必ず以下のいずれかを使用してください：
     },
     { role: 'user' as const, content: contextLine },
   ];
-  logToFile('extractFactsFromText - REQUEST', messages.map((m) => `[${m.role}] ${m.content}`).join('\n'));
+  logToFile(
+    'extractFactsFromText - REQUEST',
+    messages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
+  );
 
   const response = await client.chat.completions.create({
     model,
@@ -271,4 +423,3 @@ predicateは必ず以下のいずれかを使用してください：
   logToFile('extractFactsFromText - RESPONSE', raw);
   return parseFacts(raw);
 };
-
