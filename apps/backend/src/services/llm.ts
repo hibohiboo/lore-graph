@@ -67,7 +67,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。\n場所・施設・人物には必ず固有名詞を使い、「この町」「ここ」「この酒場」などの指示語は使わないこと。固有名詞がまだ出ていない場合は自然な流れで名前を明かすこと。`,
     },
     ...historyMessages,
     { role: 'user' as const, content: playerMessage },
@@ -412,10 +412,18 @@ predicateは必ず以下のいずれかを使用してください：
 - caused_by（因果）
 - seeks（意図・欲求）
 
+subjectNameのルール：
+- 必ず固有名詞を使う（「銀嶺亭」「リン」「リューン」「店主ダガー」など）
+- 「この町」「この酒場」「ここ」などの指示語は subjectName に使わない
+- 人称代名詞（「私」「俺」「君」「あなた」）も禁止
+- テキスト中に固有名詞が見つからない場合は、その事実を抽出しない（{"facts":[]} に含めない）
+
 例）「酒場の娘の名前はリン」→ {"facts":[{"subjectName":"酒場の娘","predicate":"is","objectName":"リン","certainty":1.0}]}
 例）「銀嶺亭は街の中心にある」→ {"facts":[{"subjectName":"銀嶺亭","predicate":"located_in","objectName":"街の中心","certainty":1.0}]}
 例）「店主はドワーフらしい」→ {"facts":[{"subjectName":"店主","predicate":"is","objectName":"ドワーフ","certainty":0.5}]}
 例）「サバやタチウオがよく獲れるんじゃないかな」→ {"facts":[{"subjectName":"近海","predicate":"related_to","objectName":"サバ・タチウオ","certainty":0.6}]}
+例）「リューンは賑やかな港町で、リンはそこに住んでいる」→ {"facts":[{"subjectName":"リューン","predicate":"is","objectName":"港町","certainty":1.0},{"subjectName":"リン","predicate":"located_in","objectName":"リューン","certainty":1.0}]}
+例）「この町は港町だぜ」（固有名詞なし）→ {"facts":[]}
 
 事実がなければ {"facts": []} を返してください。`,
     },
