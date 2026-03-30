@@ -144,7 +144,8 @@ ${existingText}
 - NPC自身に関する質問（名前・住居・出身・家族・職業・日常など）は推測でも低いcertaintyで必ず事実を生成する
 - NPCの職業・役割に関連する質問も推測でよいので必ず事実を生成する
 - {"facts": []} を返すのは、NPCが全く関与しえない第三者・遠方・専門外の話題のみ
-- subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
+- subjectNameには代名詞・汎称を使わない。「私」「俺」「僕」「あたし」「うち」「あなた」「君」「NPC」は絶対に禁止。固有名詞か固有の名称（「${npcName}」「黒潮亭」等）を使う
+- subjectNameにプレイヤーを指す語（「君」「あなた」）は使わない
 - objectNameは中立的・客観的な事実の表現にする。語尾・口調・感情表現（「だぜ」「だよ」「ね」など）は絶対に含めない
 - objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
 - predicateは必ず以下のいずれかを使用する：
@@ -257,6 +258,11 @@ const FACTS_JSON_SCHEMA = {
   },
 } as const;
 
+const PRONOUN_SUBJECTS = new Set([
+  '私', '俺', '僕', 'あたし', 'うち',
+  'あなた', '君', 'NPC',
+]);
+
 const parseFacts = (raw: string): ExtractedFact[] => {
   const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
   if (!parsed.success) {
@@ -265,10 +271,11 @@ const parseFacts = (raw: string): ExtractedFact[] => {
   }
   return parsed.data.facts.flatMap((f) => {
     if (PLACEHOLDER_PATTERN.test(f.objectName)) {
-      logToFile(
-        'parseFacts - SKIP',
-        `placeholder objectName: "${f.objectName}"`,
-      );
+      logToFile('parseFacts - SKIP', `placeholder objectName: "${f.objectName}"`);
+      return [];
+    }
+    if (PRONOUN_SUBJECTS.has(f.subjectName)) {
+      logToFile('parseFacts - SKIP', `pronoun subjectName: "${f.subjectName}"`);
       return [];
     }
     return [{ ...f, predicate: normalizePredicate(f.predicate) }];
@@ -390,7 +397,13 @@ export const extractFactsFromText = async (
       role: 'system' as const,
       content: `以下のテキストから事実をJSONで抽出してください。
 プレイヤーの質問が付いている場合は、質問の文脈を踏まえて返答から事実を読み取ってください。
-断言されている情報は certainty:1.0、「らしい」「と聞いた」などの伝聞は certainty:0.5 程度にしてください。
+
+【certainty の基準】
+- 断言されている情報: 1.0
+- 「んじゃないかな」「みたい」「たしか〜」などの推測: 0.5〜0.6
+- 「らしい」「と聞いた」などの伝聞: 0.4〜0.5
+推測・伝聞の情報は {"facts":[]} にせず、低めのcertaintyで必ず抽出してください。
+
 predicateは必ず以下のいずれかを使用してください：
 - is（状態・性質・名前）
 - located_in（空間的な所在）
@@ -402,6 +415,7 @@ predicateは必ず以下のいずれかを使用してください：
 例）「酒場の娘の名前はリン」→ {"facts":[{"subjectName":"酒場の娘","predicate":"is","objectName":"リン","certainty":1.0}]}
 例）「銀嶺亭は街の中心にある」→ {"facts":[{"subjectName":"銀嶺亭","predicate":"located_in","objectName":"街の中心","certainty":1.0}]}
 例）「店主はドワーフらしい」→ {"facts":[{"subjectName":"店主","predicate":"is","objectName":"ドワーフ","certainty":0.5}]}
+例）「サバやタチウオがよく獲れるんじゃないかな」→ {"facts":[{"subjectName":"近海","predicate":"related_to","objectName":"サバ・タチウオ","certainty":0.6}]}
 
 事実がなければ {"facts": []} を返してください。`,
     },
