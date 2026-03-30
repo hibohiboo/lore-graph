@@ -32,7 +32,11 @@ export const generateNpcReply = async (
   history?: ConversationMessage[],
   npcDef?: NpcDefinition,
 ): Promise<string> => {
-  const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
+  const validFacts = filterRelevantFacts(
+    knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f)),
+    playerMessage,
+    npcName,
+  );
   const factsText =
     validFacts.length === 0
       ? '（まだ何も知らない）'
@@ -90,6 +94,33 @@ export const generateNpcReply = async (
 
 const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
 
+const MAX_FACTS_IN_PROMPT = 15;
+
+/**
+ * プレイヤーの質問に関連する fact を絞り込む。
+ * - npcName が subjectName に含まれる fact（NPC 自身の情報）は常に優先
+ * - 残りは質問キーワードとの一致数でスコアリングして上位を返す
+ */
+const filterRelevantFacts = (facts: string[], playerMessage: string, npcName: string): string[] => {
+  if (facts.length <= MAX_FACTS_IN_PROMPT) return facts;
+
+  const keywords = playerMessage
+    .replace(/[。、？！「」『』【】\s]/g, ' ')
+    .split(' ')
+    .filter((w) => w.length >= 2);
+
+  const scored = facts.map((fact) => {
+    const isNpcFact = fact.startsWith(npcName);
+    const kwScore = keywords.reduce((acc, k) => acc + (fact.includes(k) ? 1 : 0), 0);
+    return { fact, score: (isNpcFact ? 10 : 0) + kwScore };
+  });
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_FACTS_IN_PROMPT)
+    .map((x) => x.fact);
+};
+
 export const generateFactsFromQuestion = async (
   npcName: string,
   playerMessage: string,
@@ -97,8 +128,10 @@ export const generateFactsFromQuestion = async (
   persona?: NpcPersona,
   npcDef?: NpcDefinition,
 ): Promise<ExtractedFact[]> => {
-  const confirmedFacts = existingFacts.filter(
-    (f) => !PLACEHOLDER_PATTERN.test(f),
+  const confirmedFacts = filterRelevantFacts(
+    existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f)),
+    playerMessage,
+    npcName,
   );
   const existingText =
     confirmedFacts.length === 0
