@@ -33,7 +33,7 @@ export const generateNpcReply = async (
   npcDef?: NpcDefinition,
 ): Promise<string> => {
   const validFacts = filterRelevantFacts(
-    knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f)),
+    knownFacts.filter((f) => !hasPlaceholder(f)),
     playerMessage,
     npcName,
   );
@@ -98,7 +98,9 @@ export const generateNpcReply = async (
   return '';
 };
 
-const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
+const PLACEHOLDER_WORD_PATTERN = /不明|unknown|未定|なし|none/i;
+const hasPlaceholder = (s: string): boolean =>
+  PLACEHOLDER_WORD_PATTERN.test(s) || s.includes('?') || s.includes('？') || s.includes('[');
 
 /** モデルが内部フォーマットトークンや JSON を吐いた場合のゴミ返答判定 */
 const isGarbageReply = (text: string): boolean =>
@@ -141,7 +143,7 @@ export const generateFactsFromQuestion = async (
   npcDef?: NpcDefinition,
 ): Promise<ExtractedFact[]> => {
   const confirmedFacts = filterRelevantFacts(
-    existingFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f)),
+    existingFacts.filter((f) => !hasPlaceholder(f)),
     playerMessage,
     npcName,
   );
@@ -192,7 +194,8 @@ ${existingText}
 - subjectNameには代名詞・汎称を使わない。「私」「俺」「僕」「あたし」「うち」「あなた」「君」「NPC」は絶対に禁止。固有名詞か固有の名称（「${npcName}」「黒潮亭」等）を使う
 - subjectNameにプレイヤーを指す語（「君」「あなた」）は使わない
 - objectNameは中立的・客観的な事実の表現にする。語尾・口調・感情表現（「だぜ」「だよ」「ね」など）は絶対に含めない
-- objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
+- objectNameに「不明」「？」「未定」「[名前]」「[町名]」のようなプレースホルダーは絶対に使わない
+- NPC自身に関する未知の情報（住んでいる町・出身地・家族の名前など）はファンタジー世界に合う固有名詞を造語して使う
 - predicateは必ず以下のいずれかを使用する：
   - is（状態・性質・名前）
   - located_in（空間的な所在）
@@ -201,10 +204,10 @@ ${existingText}
   - caused_by（因果）
   - seeks（意図・欲求）
 
-例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"[名前]","certainty":1.0}]}
-例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[場所名]","certainty":1.0}]}
-例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"この酒場","predicate":"is","objectName":"[酒場名]","certainty":1.0}]}
-例）プレイヤー「あなたの住んでいる町は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[町名]","certainty":0.9}]}
+例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"リン","certainty":1.0}]}
+例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"黒潮亭","certainty":1.0}]}
+例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"黒潮亭","certainty":1.0}]}
+例）プレイヤー「あなたの住んでいる町は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"リューン","certainty":0.9},{"subjectName":"リューン","predicate":"is","objectName":"港町","certainty":0.8}]}
 
 形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
     },
@@ -315,7 +318,7 @@ const parseFacts = (raw: string): ExtractedFact[] => {
     return [];
   }
   return parsed.data.facts.flatMap((f) => {
-    if (PLACEHOLDER_PATTERN.test(f.objectName)) {
+    if (hasPlaceholder(f.objectName)) {
       logToFile('parseFacts - SKIP', `placeholder objectName: "${f.objectName}"`);
       return [];
     }
