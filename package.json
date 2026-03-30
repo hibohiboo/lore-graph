@@ -7,7 +7,7 @@
     "@types/node": "^25.5.0",
     "npm-check-updates": "^19.6.6",
     "prettier": "^3.8.1",
-    "turbo": "^2.8.20",
+    "turbo": "^2.8.21",
     "typescript": "^6.0.2"
   },
   "scripts": {
