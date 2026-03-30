@@ -81,19 +81,21 @@ export const generateNpcReply = async (
     npcMessages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
   );
 
-  const response = await client.chat.completions.create({
-    model,
-    messages: npcMessages,
-    max_tokens: 512,
-  });
-
-  const reply = response.choices[0]?.message.content ?? '';
-  if (isGarbageReply(reply)) {
-    logToFile('generateNpcReply - GARBAGE', reply);
-    return '';
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const response = await client.chat.completions.create({
+      model,
+      messages: npcMessages,
+      max_tokens: 512,
+    });
+    const reply = response.choices[0]?.message.content ?? '';
+    if (!isGarbageReply(reply)) {
+      logToFile('generateNpcReply - RESPONSE', reply);
+      return reply;
+    }
+    logToFile(`generateNpcReply - GARBAGE (attempt ${attempt}/${MAX_RETRIES})`, reply);
   }
-  logToFile('generateNpcReply - RESPONSE', reply);
-  return reply;
+  return '';
 };
 
 const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
