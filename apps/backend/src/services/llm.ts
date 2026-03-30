@@ -88,11 +88,21 @@ export const generateNpcReply = async (
   });
 
   const reply = response.choices[0]?.message.content ?? '';
+  if (isGarbageReply(reply)) {
+    logToFile('generateNpcReply - GARBAGE', reply);
+    return '';
+  }
   logToFile('generateNpcReply - RESPONSE', reply);
   return reply;
 };
 
 const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
+
+/** モデルが内部フォーマットトークンや JSON を吐いた場合のゴミ返答判定 */
+const isGarbageReply = (text: string): boolean =>
+  /<\|/.test(text) ||          // <|channel|> 等のモデルトークン
+  /^\s*\{/.test(text) ||       // JSON 返答
+  !/[\u3040-\u30FF\u4E00-\u9FAF]/.test(text); // 日本語文字が一切ない
 
 const MAX_FACTS_IN_PROMPT = 15;
 
