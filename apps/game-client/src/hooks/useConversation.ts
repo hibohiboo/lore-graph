@@ -34,7 +34,18 @@ export const useConversation = (npcName: string) => {
       body: JSON.stringify({ npcName, playerMessage: snapshot, history: historySnapshot }),
     })
       .then((res) => {
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        if (!res.ok) {
+          return res.json().then(
+            (body: unknown) => {
+              const msg =
+                body && typeof body === 'object' && 'error' in body
+                  ? String((body as { error: unknown }).error)
+                  : `${res.status} ${res.statusText}`;
+              throw new Error(msg);
+            },
+            () => { throw new Error(`${res.status} ${res.statusText}`); },
+          );
+        }
         return res.json();
       })
       .then((data) => {
