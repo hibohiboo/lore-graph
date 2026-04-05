@@ -17,6 +17,6 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "eslint": "^10.1.0"
+    "eslint": "^10.2.0"
   }
 }

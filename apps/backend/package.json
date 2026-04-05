@@ -10,7 +10,7 @@
     "@repo/graph-db": "*",
     "@repo/npc-mind": "*",
     "@repo/schema": "*",
-    "hono": "^4.12.9",
+    "hono": "^4.12.10",
     "neo4j-driver": "^6.0.1",
     "openai": "^6.33.0",
     "zod": "^4.3.6"
@@ -18,7 +18,7 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "@types/bun": "latest"
   }
 }

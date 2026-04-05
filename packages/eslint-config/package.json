@@ -5,17 +5,17 @@
     "ncu": "ncu -u"
   },
   "devDependencies": {
-    "@eslint-react/eslint-plugin": "v3.0.0",
-    "@eslint/css": "^1.0.0",
+    "@eslint-react/eslint-plugin": "v4.2.3",
+    "@eslint/css": "^1.1.0",
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-hooks-extra": "^2.13.0",
     "eslint-plugin-sonarjs": "^4.0.2",
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.4.0",
-    "typescript-eslint": "^8.57.2"
+    "typescript-eslint": "^8.58.0"
   },
   "exports": {
     "./base": "./base.js",

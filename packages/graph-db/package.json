@@ -22,7 +22,7 @@
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@testcontainers/neo4j": "^11.13.0",
-    "eslint": "^10.1.0",
+    "eslint": "^10.2.0",
     "testcontainers": "^11.13.0"
   }
 }
