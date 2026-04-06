@@ -32,7 +32,11 @@ export const generateNpcReply = async (
   history?: ConversationMessage[],
   npcDef?: NpcDefinition,
 ): Promise<string> => {
-  const validFacts = knownFacts.filter((f) => !PLACEHOLDER_PATTERN.test(f));
+  const validFacts = filterRelevantFacts(
+    knownFacts.filter((f) => !hasPlaceholder(f)),
+    playerMessage,
+    npcName,
+  );
   const factsText =
     validFacts.length === 0
       ? '（まだ何も知らない）'
@@ -67,7 +71,7 @@ export const generateNpcReply = async (
   const npcMessages = [
     {
       role: 'system' as const,
-      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。`,
+      content: `あなたは「${npcName}」というNPCです。\n${personaSection}次の情報を知っています：\n${factsText}\nプレイヤーの発言に自然な日本語で1〜3文で返答してください。提供された情報をもとに返答し、直接の情報がなくても既知の情報から合理的に推測できることは答えてよいです。確信度が低い推測は「たしか〜」「〜じゃないかな」などの曖昧な表現を使い、全く手がかりがないことだけ「わかりません」と答えてください。\n場所・施設・人物には必ず固有名詞を使い、「この町」「ここ」「この酒場」などの指示語は使わないこと。固有名詞がまだ出ていない場合は自然な流れで名前を明かすこと。`,
     },
     ...historyMessages,
     { role: 'user' as const, content: playerMessage },
@@ -77,18 +81,59 @@ export const generateNpcReply = async (
     npcMessages.map((m) => `[${m.role}] ${m.content}`).join('\n'),
   );
 
-  const response = await client.chat.completions.create({
-    model,
-    messages: npcMessages,
-    max_tokens: 512,
-  });
-
-  const reply = response.choices[0]?.message.content ?? '';
-  logToFile('generateNpcReply - RESPONSE', reply);
-  return reply;
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const response = await client.chat.completions.create({
+      model,
+      messages: npcMessages,
+      max_tokens: 512,
+    });
+    const reply = response.choices[0]?.message.content ?? '';
+    if (!isGarbageReply(reply)) {
+      logToFile('generateNpcReply - RESPONSE', reply);
+      return reply;
+    }
+    logToFile(`generateNpcReply - GARBAGE (attempt ${attempt}/${MAX_RETRIES})`, reply);
+  }
+  return '';
 };
 
-const PLACEHOLDER_PATTERN = /不明|unknown|？|\?|未定|なし|none/i;
+const PLACEHOLDER_WORD_PATTERN = /不明|unknown|未定|なし|none/i;
+const hasPlaceholder = (s: string): boolean =>
+  PLACEHOLDER_WORD_PATTERN.test(s) || s.includes('?') || s.includes('？') || s.includes('[');
+
+/** モデルが内部フォーマットトークンや JSON を吐いた場合のゴミ返答判定 */
+const isGarbageReply = (text: string): boolean =>
+  /<\|/.test(text) ||          // <|channel|> 等のモデルトークン
+  /^\s*\{/.test(text) ||       // JSON 返答
+  !/[\u3040-\u30FF\u4E00-\u9FAF]/.test(text); // 日本語文字が一切ない
+
+const MAX_FACTS_IN_PROMPT = 15;
+
+/**
+ * プレイヤーの質問に関連する fact を絞り込む。
+ * - npcName が subjectName に含まれる fact（NPC 自身の情報）は常に優先
+ * - 残りは質問キーワードとの一致数でスコアリングして上位を返す
+ */
+const filterRelevantFacts = (facts: string[], playerMessage: string, npcName: string): string[] => {
+  if (facts.length <= MAX_FACTS_IN_PROMPT) return facts;
+
+  const keywords = playerMessage
+    .replace(/[。、？！「」『』【】\s]/g, ' ')
+    .split(' ')
+    .filter((w) => w.length >= 2);
+
+  const scored = facts.map((fact) => {
+    const isNpcFact = fact.startsWith(npcName);
+    const kwScore = keywords.reduce((acc, k) => acc + (fact.includes(k) ? 1 : 0), 0);
+    return { fact, score: (isNpcFact ? 10 : 0) + kwScore };
+  });
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_FACTS_IN_PROMPT)
+    .map((x) => x.fact);
+};
 
 export const generateFactsFromQuestion = async (
   npcName: string,
@@ -97,8 +142,10 @@ export const generateFactsFromQuestion = async (
   persona?: NpcPersona,
   npcDef?: NpcDefinition,
 ): Promise<ExtractedFact[]> => {
-  const confirmedFacts = existingFacts.filter(
-    (f) => !PLACEHOLDER_PATTERN.test(f),
+  const confirmedFacts = filterRelevantFacts(
+    existingFacts.filter((f) => !hasPlaceholder(f)),
+    playerMessage,
+    npcName,
   );
   const existingText =
     confirmedFacts.length === 0
@@ -144,9 +191,11 @@ ${existingText}
 - NPC自身に関する質問（名前・住居・出身・家族・職業・日常など）は推測でも低いcertaintyで必ず事実を生成する
 - NPCの職業・役割に関連する質問も推測でよいので必ず事実を生成する
 - {"facts": []} を返すのは、NPCが全く関与しえない第三者・遠方・専門外の話題のみ
-- subjectNameには「あなた」や「私」ではなく必ず具体的な名前を使う
+- subjectNameには代名詞・汎称を使わない。「私」「俺」「僕」「あたし」「うち」「あなた」「君」「NPC」は絶対に禁止。固有名詞か固有の名称（「${npcName}」「黒潮亭」等）を使う
+- subjectNameにプレイヤーを指す語（「君」「あなた」）は使わない
 - objectNameは中立的・客観的な事実の表現にする。語尾・口調・感情表現（「だぜ」「だよ」「ね」など）は絶対に含めない
-- objectNameに「不明」「？」「未定」などのプレースホルダーは絶対に使わない。確定できない場合はそのfactを生成しない
+- objectNameに「不明」「？」「未定」「[名前]」「[町名]」のようなプレースホルダーは絶対に使わない
+- NPC自身に関する未知の情報（住んでいる町・出身地・家族の名前など）はファンタジー世界に合う固有名詞を造語して使う
 - predicateは必ず以下のいずれかを使用する：
   - is（状態・性質・名前）
   - located_in（空間的な所在）
@@ -155,10 +204,10 @@ ${existingText}
   - caused_by（因果）
   - seeks（意図・欲求）
 
-例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"[名前]","certainty":1.0}]}
-例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[場所名]","certainty":1.0}]}
-例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"この酒場","predicate":"is","objectName":"[酒場名]","certainty":1.0}]}
-例）プレイヤー「あなたの住んでいる町は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"[町名]","certainty":0.9}]}
+例）プレイヤー「あなたの名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"is","objectName":"リン","certainty":1.0}]}
+例）プレイヤー「ここはどこ？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"黒潮亭","certainty":1.0}]}
+例）プレイヤー「あなたの酒場の名前は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"黒潮亭","certainty":1.0}]}
+例）プレイヤー「あなたの住んでいる町は？」→ {"facts": [{"subjectName":"${npcName}","predicate":"located_in","objectName":"リューン","certainty":0.9},{"subjectName":"リューン","predicate":"is","objectName":"港町","certainty":0.8}]}
 
 形式: {"facts": [{"subjectName":"...","predicate":"...","objectName":"...","certainty":0.0〜1.0}]}`,
     },
@@ -257,6 +306,11 @@ const FACTS_JSON_SCHEMA = {
   },
 } as const;
 
+const PRONOUN_SUBJECTS = new Set([
+  '私', '俺', '僕', 'あたし', 'うち',
+  'あなた', '君', 'NPC',
+]);
+
 const parseFacts = (raw: string): ExtractedFact[] => {
   const parsed = ExtractedFactsSchema.safeParse(JSON.parse(raw));
   if (!parsed.success) {
@@ -264,11 +318,12 @@ const parseFacts = (raw: string): ExtractedFact[] => {
     return [];
   }
   return parsed.data.facts.flatMap((f) => {
-    if (PLACEHOLDER_PATTERN.test(f.objectName)) {
-      logToFile(
-        'parseFacts - SKIP',
-        `placeholder objectName: "${f.objectName}"`,
-      );
+    if (hasPlaceholder(f.objectName)) {
+      logToFile('parseFacts - SKIP', `placeholder objectName: "${f.objectName}"`);
+      return [];
+    }
+    if (PRONOUN_SUBJECTS.has(f.subjectName)) {
+      logToFile('parseFacts - SKIP', `pronoun subjectName: "${f.subjectName}"`);
       return [];
     }
     return [{ ...f, predicate: normalizePredicate(f.predicate) }];
@@ -390,7 +445,13 @@ export const extractFactsFromText = async (
       role: 'system' as const,
       content: `以下のテキストから事実をJSONで抽出してください。
 プレイヤーの質問が付いている場合は、質問の文脈を踏まえて返答から事実を読み取ってください。
-断言されている情報は certainty:1.0、「らしい」「と聞いた」などの伝聞は certainty:0.5 程度にしてください。
+
+【certainty の基準】
+- 断言されている情報: 1.0
+- 「んじゃないかな」「みたい」「たしか〜」などの推測: 0.5〜0.6
+- 「らしい」「と聞いた」などの伝聞: 0.4〜0.5
+推測・伝聞の情報は {"facts":[]} にせず、低めのcertaintyで必ず抽出してください。
+
 predicateは必ず以下のいずれかを使用してください：
 - is（状態・性質・名前）
 - located_in（空間的な所在）
@@ -399,9 +460,18 @@ predicateは必ず以下のいずれかを使用してください：
 - caused_by（因果）
 - seeks（意図・欲求）
 
+subjectNameのルール：
+- 必ず固有名詞を使う（「銀嶺亭」「リン」「リューン」「店主ダガー」など）
+- 「この町」「この酒場」「ここ」などの指示語は subjectName に使わない
+- 人称代名詞（「私」「俺」「君」「あなた」）も禁止
+- テキスト中に固有名詞が見つからない場合は、その事実を抽出しない（{"facts":[]} に含めない）
+
 例）「酒場の娘の名前はリン」→ {"facts":[{"subjectName":"酒場の娘","predicate":"is","objectName":"リン","certainty":1.0}]}
 例）「銀嶺亭は街の中心にある」→ {"facts":[{"subjectName":"銀嶺亭","predicate":"located_in","objectName":"街の中心","certainty":1.0}]}
 例）「店主はドワーフらしい」→ {"facts":[{"subjectName":"店主","predicate":"is","objectName":"ドワーフ","certainty":0.5}]}
+例）「サバやタチウオがよく獲れるんじゃないかな」→ {"facts":[{"subjectName":"近海","predicate":"related_to","objectName":"サバ・タチウオ","certainty":0.6}]}
+例）「リューンは賑やかな港町で、リンはそこに住んでいる」→ {"facts":[{"subjectName":"リューン","predicate":"is","objectName":"港町","certainty":1.0},{"subjectName":"リン","predicate":"located_in","objectName":"リューン","certainty":1.0}]}
+例）「この町は港町だぜ」（固有名詞なし）→ {"facts":[]}
 
 事実がなければ {"facts": []} を返してください。`,
     },

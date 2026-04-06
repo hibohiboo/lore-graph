@@ -37,6 +37,10 @@ export const createConversationRoute = (db: () => Driver) => {
     const allFacts = [...(await getNpcFacts(db(), npcName)), ...worldFacts];
     const npcReply = await generateNpcReply(npcName, allFacts, playerMessage, persona, history, npcDef);
 
+    if (!npcReply) {
+      return c.json({ error: 'NPC の返答に失敗しました。もう一度試してください。' }, 500);
+    }
+
     const [replyFacts, personaHints] = await Promise.all([
       extractFactsFromText(npcReply, playerMessage),
       extractPersonaHintsFromReply(npcName, npcReply, persona),
